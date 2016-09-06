@@ -1,0 +1,61 @@
+# load psf and dcd
+mol new {namdrun_run.namdout.dcd} type {dcd} first 0 last -1 step 1 waitfor -1
+mol addfile {_start_wat.psf} type {psf} first 0 last -1 step 1 waitfor -1 0
+
+# functon to calculate rmsd
+proc rmsd_through_time {{sel}} {
+	set output [open "mdAnal.dat" a]
+	puts $output "rmsd of ($sel)"
+	set reference [atomselect 0 $sel frame 1]
+	set compare [atomselect 0 $sel]
+	set numsteps [molinfo 0 get numframes]
+	for {set frame 1} {$frame < $numsteps} {incr frame} {
+		$compare frame $frame
+		set trans_mat [measure fit $compare $reference]
+		$compare move $trans_mat
+		set rmsd [measure rmsd $compare $reference]
+		puts $output "$frame\t$rmsd"
+	}
+	close $output
+}
+
+# funciton to measure distance
+proc measure_dist {sl1 sl2} {
+	set s1 [atomselect 0 $sl1]
+	set s2 [atomselect 0 $sl2]
+	set output [open "mdAnal.dat" a]
+	puts $output "distance between ([$s1 text]) and ([$s2 text])"
+	set dist [measure bond [list [$s1 list] [$s2 list]] frame all]
+	puts $output "$dist"
+	close $output
+}
+	
+# customized part
+# calculate rmsd for different selection
+set sel "chain B and resid 4 5 6 and not hydrogen"
+rmsd_through_time $sel
+
+set sel "chain B and not hydrogen"
+rmsd_through_time $sel
+
+set sel "chain B and resid 4 5 6 and backbone"
+rmsd_through_time $sel
+
+set sel "chain B and backbone"
+rmsd_through_time $sel
+
+# calculate distance for different selection
+mol new {/home/ironfs/scratch/grigoryanlab/fzheng/PDZ_unnatural/P95P3/MD/K-DIL-Q-S-DIL-ASP/multishort/pert0/namdrun_run.namdout.dcd} type {dcd} first 0 last -1 step 1 waitfor -1
+mol addfile {/home/ironfs/scratch/grigoryanlab/fzheng/PDZ_unnatural/P95P3/MD/K-DIL-Q-S-DIL-ASP/multishort/pert0/_start_wat.psf} type {psf} first 0 last -1 step 1 waitfor -1 0
+
+set sel1 "chain A and resid 24 and name N"
+set sel2 "chain B and resid 6 and name OD1"
+set sel3 "chain B and resid 6 and name OD2"
+set sel4 "chain A and resid 72 and name NE2"
+set sel5 "chain B and resid 4 and name OG"
+
+measure_dist $sel1 $sel2
+measure_dist $sel1 $sel3
+measure_dist $sel4 $sel5
+
+exit
