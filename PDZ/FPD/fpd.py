@@ -1,7 +1,8 @@
-import General, Master, PDB, Cluster
+from General import *
+import Master, PDB, Cluster
 from prody import *
 
-SELFBIN = General.selfbin(sys.argv[0])
+SELFBIN = selfbin(sys.argv[0])
 
 par = argparse.ArgumentParser()
 par.add_argument('--p', required = True, help ='PDB file, N2P2 or M3P6')
@@ -38,14 +39,14 @@ pocket = p.select('resnum '+ rangeS)
 writePDB('_pocket.pdb', pocket.copy()) # binding pocket
 
 # use master to create pds files
-Master.createPDS('_pocket.pdb')
-tem = '_'+General.removePath(args.m)
+Master.createPDS(type='query', pdb='_pocket.pdb')
+tem = '_'+removePath(args.m)
 os.system('cp '+args.m +' '+tem)
-Master.createPDS(tem, query= False)
+Master.createPDS(type='target', pdb=tem)
 # search pocket in the template
-Master.masterSearch('_pocket.pds', str.replace(tem, 'pdb', 'pds'), bbrmsd = False, topN =1, rmsdcut = 5.0)
+Master.masterSearch(rmsdcut = 3.0, bbrmsd = False, query='_pocket.pds', target=tem.replace('pdb', 'pds'), topN =1, matchOut='_pocket.match')
 # generate full match file for the template
-Master.matchInFile('_pocket.pds', '__pocket.match', '_match', 'full')
+Master.matchInFile(query='_pocket.pds', matchIn='_pocket.match', structOut='_match', outType='full')
 
 ptem = parsePDB('_match/full1.pdb') # this is the superimposed templated structure
 assert ptem.numChains() == 2 
@@ -69,19 +70,21 @@ writePDB('_start.pdb', rec)
 pepseq = args.pseq
 
 # mutate the side chains to the specified peptide sequence
-import PDZ.Rosetta # import late because this step is slow
-PDZ.Rosetta.normalMut('_start.pdb', range(pepstart, pepend+1), pepseq, 'start.pdb')
+import Rosetta # import late because this step is slow
+Rosetta.normalMut('_start.pdb', range(pepstart, pepend+1), pepseq, 'start.pdb')
 
 # clean up the temporary files
 os.system('rm -r _*')
 os.chdir(odir)
 
 # the fpd part
-pepfrags = '/home/grigoryanlab/home/fzheng/PDZ.2014/pepfrags/'
-flag = General._fpddemo + '/input_files/flags'
-pflag = General._fpddemo + '/input_files/prepack_flags'
-rosetta_db = General._rosetta + '/main/database'
-rosetta_exe = General._rosetta + '/main/source/bin'
+pepfrags = os.path.realpath(odir+'/pepfrags/')
+if os.path.isdir(pepfrags):
+    os.makedirs(pepfrags)
+flag = PATH_fpddemo + '/input_files/flags'
+pflag = PATH_fpddemo + '/input_files/prepack_flags'
+rosetta_db = PATH_rosetta + '/main/database'
+rosetta_exe = PATH_rosetta + '/main/source/bin'
 
 ldir = Cluster.createLocalSpace()
 os.system('cp '+ mdir + '/start.pdb ' + ldir + '/start.pdb')
@@ -93,9 +96,9 @@ if args.ab != 0: # not tested, now only work for natural aa
     fragf = '/'.join([odir, args.pname, '.fragready'])
     if args.ab == 2:
         while os.path.isfile(fragf) == False:
-            sleep(10)
+            time.sleep(10)
     else:
-        os.system(General._fpddemo + '/scripts/prep_abinitio.sh 0000')
+        os.system(PATH_fpddemo + '/scripts/prep_abinitio.sh 0000')
         os.system('cp -dr frags '+pepfrags+args.pname)
         os.system('touch '+fragf)
     # copy stuff
@@ -104,8 +107,8 @@ if args.ab != 0: # not tested, now only work for natural aa
     if not os.path.isdir('frags'):
         os.system('cp -r '+pepfrags+args.pname+' frags')
     # run FPD
-    os.system(General._fpddemo +'/prepack_example')
-    os.system(General._fpddemo +'/run_example')
+    os.system(PATH_fpddemo +'/prepack_example')
+    os.system(PATH_fpddemo +'/run_example')
 else:
     # prepack_flags = ['-database', rosetta_db, '-s start.pdb', '-native native.pdb', '-ex1', '-ex2aro', '-use_input_sc', '-unboundrot native.pdb', '-flexpep_prepack', '-nstruct 1']
     prepack_flags = ['-database', rosetta_db,
@@ -119,10 +122,10 @@ else:
     os.system('mv start_0001.pdb start.ppk.pdb; mv score.sc ppk.score.sc')
     
     if args.capC:
-        PDZ.Rosetta.addPepTer('start.ppk.pdb', 1, pepseq[0], 'start.pdb', plen = p.numResidues(), resnC = 6,  resnameC = pepseq[-1])
+        Rosetta.addPepTer('start.ppk.pdb', 1, pepseq[0], 'start.pdb', plen = p.numResidues(), resnC = 6,  resnameC = pepseq[-1])
     # if only add N-ter cap
     else:
-        PDZ.Rosetta.addPepTer('start.ppk.pdb', 1, pepseq[0], 'start.pdb', plen = p.numResidues())
+        Rosetta.addPepTer('start.ppk.pdb', 1, pepseq[0], 'start.pdb', plen = p.numResidues())
 
     os.system('cp start.pdb native.pdb')
 
@@ -133,10 +136,11 @@ else:
                      '-pep_refine',
                      '-ex1',
                      '-ex2aro',
-                     '-nstruct', '500',
+                     # '-nstruct', '500',
+                     '-nstruct', '5', # 5 is for test, 500 is for production
                      '-scorefile', 'score.sc',
                      '-chemical:patch_selectors', 'PEPTIDE_CAP', '-in:Ntermini B',
-                     '-score:weights talaris2013_no_rama_paapp_fz']
+                     '-score:weights talaris2013_no_rama_paapp_fz']# custom scoring function
     # remember to remove '-use_input_sc', otherwise cannot mutate to D-AA
 
     if args.capC:
@@ -152,6 +156,5 @@ if args.v:
 else:
     os.system('cp score.sc '+odir+'/'+args.pname+'/'+args.dname)
 os.chdir(odir)
-shutil.rmtree(ldir)
 os.system('touch ' + args.pname+'/'+args.dname+'/.finished')
 Cluster.destroyLocalSpace(ldir)

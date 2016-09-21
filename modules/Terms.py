@@ -5,16 +5,26 @@ from PDB import *
 
 
 class Term:
-    def __init__(self, parent = None, seed = None, contact = None, pdbf = None):
+    def __init__(self, parent = None, seed = None, contact = None):
         # it is ok to initialize empty term
-        self.parent = parent
+        self.parent = parent # the original PDB file
         self.seed = seed
         self.contact = contact
-        self.pdbf = pdbf
 
         self.residues = []
         self.frag = None # here is the prody atom selection
-        self.pdbf = None # disallow naming output fragment randomly
+        # create a name for associated PDB file, based on the name of seed and contact
+        self.pdbf = ??
+
+    # the second method of initialization; from an existing PDB file
+    # only PDB files with certain names can be read
+    def readFromPDB(self, pdbf):
+        pdbfname = removePath(pdbf)
+        pdbinfo = pdbfname.split('_')[1:-1]
+        assert len(pdbinfo) > 0, 'the input file cannot be used to create a TERM object, quit...'
+        self.seed = pdbinfo[0]
+        self.contact = pdbinfo[1:]
+        self.pdbf = pdbf
 
     # only Term object can call this method
     def _adjacentWindow(self, atoms, cid, resnum, flank):
@@ -29,28 +39,18 @@ class Term:
                 resList.append(str(iresnum))
         return resList
 
-    # only PDB files with certain names can be read
-    def readFromPDB(self, pdbf):
-        pdbfname = removePath(pdbf)
-        pdbinfo = pdbfname.split('_')[1:-1]
-        if len(pdbinfo) == 0:
-            self.pdbf = None
-        else:
-            self.seed = pdbinfo[0]
-            self.contact = pdbinfo[1:]
-
     def makeFragment(self, flank = 1, dry = False):
         assert self.seed != None, 'the seed of TERM has not been defined...'
         assert isinstance(self.contact, list), 'the contact list of TERM has not been initialized...'
-        assert self.pdbf == None, 'the pdb file for this term already exists as ' + pdbf
+        assert self.pdbf == None, 'the pdb file for this term already exists as ' + self.pdbf
         assert os.path.isfile(self.parent), 'the template pdb file does not exist...'
 
         # name output pdf file systematically
 
         atoms = parsePDB(self.parent, model = 1)
         frag = False
-        for r in [seed] + self.contact:
-            resList = _adjacentWindow(atoms, r[0], int(r[1:]), flank)
+        for r in [self.seed] + self.contact:
+            resList = self._adjacentWindow(atoms, r[0], int(r[1:]), flank)
             self.residues.extend([r[0] + x for x in resList])
             selectstr = 'chain ' + r[0] + ' and resnum ' + ' '.join(resList)
             selection = atoms.select(selectstr)
@@ -69,7 +69,7 @@ class Term:
     def getResidues(self):
         return self.residues
 
-    def findResidue(self, cid, resnum):
+    def findResidue(self, cid, resnum): # return the index of a residue in the TERM
         if cid +',' + str(resnum) in self.residues:
             return self.residues.index(cid +',' + str(resnum))
         else:

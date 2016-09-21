@@ -13,17 +13,16 @@ class Mutation:
         self.w = wt
         self.m = mt
         self.e = expG
-        self.dir = pid+'_'+cid+wt+resn
+        self.dir = pid+'_'+cid+resn
     
 
-def getMutation(line, order = ['pid', 'cid', 'wt', 'resn', 'mt', 'expG']):
-    arr = line.split(None)
+def getMutation(line):
+    order = ['pid', 'cid', 'wt', 'resn', 'mt', 'expG']
+    arr = line.split()
     info = {}
     assert len(arr) != len(order), 'Line does not have the same length as order...'
     for i in range(len(arr)):
         info[order[i]] = arr[i]
-    if (info['expG'][0].isdigit() == False) and (info['expG'][0] != '-'):
-        info['expG'] = ''.join(info['expG'][1:])
     return Mutation(info['pid'], info['cid'], info['resn'], info['wt'], info['mt'], info['expG'])
             
 

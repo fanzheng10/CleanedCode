@@ -69,8 +69,7 @@ def qsub(cmds, fileName=None, mem=2, hrs=3, ironfs=True, opts=[], maxJobs=2500, 
 def waitJobs(jobs, sleep_time=120, rerun_time=24, giveup_time=3):
     time.sleep(sleep_time)
     while len(jobs)>0:
-        for j in jobs
-            for j in jobs:
+        for j in jobs:
             j.checkjob()
             if j.running == 0:
                 jobs.remove(j)
@@ -83,7 +82,6 @@ def waitJobs(jobs, sleep_time=120, rerun_time=24, giveup_time=3):
                     j.submit(rerun_time)
                     jobs.append(j)
         print('Running, '+ str(len(jobs)) + ' jobs left ...')
-
 
 
 def numJobs(u='fzheng'):

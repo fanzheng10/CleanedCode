@@ -97,24 +97,24 @@ def writeItems(alist, ofh, sep='\t'):
 ### Interface ###
 # provide interface to other programs at steady paths, such as MASTER, MD, confind, Rosetta, etc.
 
-_blast = '/home/grigoryanlab/library/blast/blast-2.2.26/bin'
-_confind = '/home/anthill/fzheng/home/confind/confind'
-_master = '/home/grigoryanlab/library/MASTER/bin'
-_rotLib = '/home/grigoryanlab/library/confind/rotlibs/DB-2010'
-_termaster = ''
-_usearch = '' # usearch is a software to cluster sequence based on sequence identity and remove redundancy
+PATH_blast = '/home/grigoryanlab/library/blast/blast-2.2.26/bin'
+PATH_confind = '/home/anthill/fzheng/home/confind/confind'
+PATH_master = '/home/grigoryanlab/library/MASTER/bin'
+PATH_rotLib = '/home/grigoryanlab/library/confind/rotlibs/DB-2010'
+PATH_termaster = ''
+PATH_usearch = '' # usearch is a software to cluster sequence based on sequence identity and remove redundancy
 
 
-_namd = '/home/grigoryanlab/library/bin/namd2'
-_charmm = '/home/grigoryanlab/library/bin/charmrun'
-_vmd = '/home/grigoryanlab/local/bin/vmd'
+PATH_namd = '/home/grigoryanlab/library/bin/namd2'
+PATH_charmm = '/home/grigoryanlab/library/bin/charmrun'
+PATH_vmd = '/home/grigoryanlab/local/bin/vmd'
 
 
-_rosetta = '/home/anthill/fzheng/home/rosetta2014'
-_pyrosetta = '/home/anthill/fzheng/home/software/PyRosetta.ScientificLinux-r56316.64Bit'
-_fpddemo = '/home/anthill/fzheng/home/software/FlexPepDock_AbInitio'
+PATH_rosetta = '/home/anthill/fzheng/home/rosetta2014'
+PATH_pyrosetta = '/home/anthill/fzheng/home/software/PyRosetta.ScientificLinux-r56316.64Bit'
+PATH_fpddemo = '/home/anthill/fzheng/home/software/FlexPepDock_AbInitio'
 
 
 # thesis directory
-_thesisData = '/home/anthill/fzheng/home/Thesis/Data'
+PATH_thesisData = '/home/anthill/fzheng/home/Thesis/Data'
 

@@ -43,13 +43,13 @@ aaindex['X'] = -1
 
 
 def s2t (res):
-    assert len(res) != 1, 'Invalid input, should be one letter...'
+    assert len(res) == 1, 'Invalid input, should be one letter...'
     assert res in a2aaa, 'Invalid input, no such letter...'
     return a2aaa[res]
 
 
 def t2s (res):
-    assert len(res) != 3, 'Invalid input, should be three letter...'
+    assert len(res) == 3, 'Invalid input, should be three letter...'
     if not res in aaa2a: # this may not be an error, but an unrecognize unnatural AA
         return 'X'
     return aaa2a[res]
@@ -87,7 +87,7 @@ def getResByInd(pdbf, cid, resn, mode = 1):
     res = None # if not find, will return None
     for ires in atoms.iterResidues():
         if mode == 1:
-            if str(ires.getResnum()) + ires.getIcode() == resn) and (ires.getChid() == cid):
+            if (str(ires.getResnum()) + ires.getIcode() == resn) and (ires.getChid() == cid):
                 res = ires
                 break
         if mode == 2:

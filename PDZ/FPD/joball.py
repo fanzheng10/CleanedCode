@@ -1,10 +1,11 @@
-import General, PDB
-SELFBIN = General.selfbin(sys.argv[0])
+from General import *
+import PDB, Cluster
+SELFBIN = selfbin(sys.argv[0])
 
 # some constant to declare
 bp_range = {'N2P2':'16-23 65-73', 'M3P6': '9-16 60-68', 'P95P3': '23-30 72-80'}
-pdbbin = General._thesisData + '/PDZ/templatePDBs/'
-templateList = General._thesisData + '/PDZ/' + 'domains_withPep_sim.txt' 
+pdbbin = PATH_thesisData + '/PDZ/templatePDBs/'
+templateList = PATH_thesisData + '/PDZ/' + 'domains_withPep_sim.txt'
 
 par = argparse.ArgumentParser(description = 'execute Rosetta FlexPepDock for a list of peptide')
 par.add_argument('--p', choices = bp_range.keys(), help ='receptor structure')
@@ -17,7 +18,7 @@ par.add_argument('--low', action = 'store_true', help = 'if true, apply low reso
 par.add_argument('--capC', action = 'store_true', help = 'if true, also cap C-terminus of the peptide')
 args = par.parse_args()
 
-tems = open(args.temlist).readlines()
+tems = open(templateList).readlines()
 ntem = len(tems)
 lines = open(args.l).readlines()
 if args.n != None:
@@ -48,7 +49,7 @@ for i in range(len(lines)):
             continue
         if not os.path.isfile(pepid +'/model'+str(m)+'.out/score.sc'):
             cmd = ['python', SELFBIN + '/fpd.py', 
-            '--p', General.absPath(args.p), 
+            '--p', absPath(args.p + '.pdb'),
             '--range', bp_range[args.p], 
             '--pname', pepid, 
             '--pseq', ' '.join(pep), 
