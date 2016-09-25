@@ -7,7 +7,7 @@ bp_range = {'N2P2':'16-23 65-73', 'M3P6': '9-16 60-68', 'P95P3': '23-30 72-80'}
 pdbbin = PATH_thesisData + '/PDZ/templatePDBs/'
 templateList = PATH_thesisData + '/PDZ/' + 'domains_withPep_sim.txt'
 
-par = argparse.ArgumentParser(description = 'execute Rosetta FlexPepDock for a list of peptide')
+par = argparse.ArgumentParser(description = 'execute Rosetta FlexPepDock for a list of peptide (Do you remember pyr?)')
 par.add_argument('--p', choices = bp_range.keys(), help ='receptor structure')
 par.add_argument('--l', required = True, help = 'a list of all peptide sequences')
 par.add_argument('--n', help = 'the first and the last line to execute in the list file, like 1-10, if not defined, run all')

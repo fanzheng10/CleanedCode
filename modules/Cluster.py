@@ -67,6 +67,7 @@ def qsub(cmds, fileName=None, mem=2, hrs=3, ironfs=True, opts=[], maxJobs=2500, 
 
 
 def waitJobs(jobs, sleep_time=120, rerun_time=24, giveup_time=3):
+    odir = os.getcwd()
     time.sleep(sleep_time)
     while len(jobs)>0:
         for j in jobs:
@@ -79,8 +80,10 @@ def waitJobs(jobs, sleep_time=120, rerun_time=24, giveup_time=3):
                         print('have failed 3 times, give up ...')
                         continue
                     print('resubmitting ... ')
+                    os.chdir(j.myid)
                     j.submit(rerun_time)
                     jobs.append(j)
+                    os.chdir(odir)
         print('Running, '+ str(len(jobs)) + ' jobs left ...')
 
 

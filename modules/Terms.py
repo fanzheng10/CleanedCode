@@ -1,20 +1,21 @@
 # includes the functions required for TERM-associated analysis
+# the format of residue is like 'A10', no comma
 
 from General import *
 from PDB import *
 
 
 class Term:
-    def __init__(self, parent = None, seed = None, contact = None):
+    def __init__(self, parent = None, seed = None, contact = []):
         # it is ok to initialize empty term
         self.parent = parent # the original PDB file
         self.seed = seed
-        self.contact = contact
+        self.contact = contact # a list if not none
 
         self.residues = []
         self.frag = None # here is the prody atom selection
+        self.pdbf = None
         # create a name for associated PDB file, based on the name of seed and contact
-        self.pdbf = ??
 
     # the second method of initialization; from an existing PDB file
     # only PDB files with certain names can be read
@@ -25,6 +26,8 @@ class Term:
         self.seed = pdbinfo[0]
         self.contact = pdbinfo[1:]
         self.pdbf = pdbf
+        conres = ConRes(pdbf)
+        self.residues = [r.getChid() + str(r.getResnum()) for r in conres]
 
     # only Term object can call this method
     def _adjacentWindow(self, atoms, cid, resnum, flank):
@@ -32,7 +35,7 @@ class Term:
         assert isinstance(flank, int)
         resList = []
         for ires in atoms.iterResidues():
-            if (ires.getIcode() != '') or (ires.getChid != cid):
+            if (ires.getIcode() != '') or (ires.getChid() != cid):
                 continue
             iresnum = ires.getResnum()
             if abs(resnum - iresnum)  <= flank:
@@ -44,6 +47,7 @@ class Term:
         assert isinstance(self.contact, list), 'the contact list of TERM has not been initialized...'
         assert self.pdbf == None, 'the pdb file for this term already exists as ' + self.pdbf
         assert os.path.isfile(self.parent), 'the template pdb file does not exist...'
+        self.pdbf = '_'.join([getBase(removePath(self.parent))] + [self.seed] + self.contact) + '.pdb'
 
         # name output pdf file systematically
 
@@ -57,7 +61,7 @@ class Term:
             if not frag:
                 frag = selection
             else:
-                frag = frag + selection
+                frag = frag | selection # important: using | instead of + will autosort
         frag = frag.copy()
         self.residues = list(set(self.residues))
         self.residues = sorted(self.residues, key = lambda x : (x[0], int(x[1:])))
@@ -70,8 +74,8 @@ class Term:
         return self.residues
 
     def findResidue(self, cid, resnum): # return the index of a residue in the TERM
-        if cid +',' + str(resnum) in self.residues:
-            return self.residues.index(cid +',' + str(resnum))
+        if cid + str(resnum) in self.residues:
+            return self.residues.index(cid + str(resnum))
         else:
             return -1
 
@@ -88,6 +92,18 @@ class Term:
             return -1
         else:
             return self.contact
+
+    def getSegLen(self):
+        assert self.pdbf != None
+        conres = ConRes(self.pdbf)
+        sort_res = sorted(conres,  key = lambda x: (x.getChid(), x.getResnum()))
+        segment = [1]
+        for i in range(1, len(sort_res)):
+            if (sort_res[i].getChid() == sort_res[i-1].getChid()) and (sort_res[i].getResnum() -1 == sort_res[i-1].getResnum()):
+                segment[-1] += 1
+            else:
+                segment.append(1)
+        return segment
 
 
 def contactList(profile, resnum, cid = '', outFile = None, dmin = 0.01, dmax = 1.0001, monomer = True):
@@ -108,7 +124,7 @@ def contactList(profile, resnum, cid = '', outFile = None, dmin = 0.01, dmax = 1
     conress = [] # list of amino acids for contacts
     if outFile != None:
         ofh = open(outFile, 'w')
-    N = 0 # counter of contacts
+    N = 1 # counter of contacts
     with open(profile) as mapf:
         for line in mapf:
             if not re.match('contact', line):
@@ -124,7 +140,7 @@ def contactList(profile, resnum, cid = '', outFile = None, dmin = 0.01, dmax = 1
                     continue
                 if monomer and (not contact.startswith(cid)):
                     continue
-                cons.append(contact)
+                cons.append(contact.replace(',', ''))
                 conress.append(conres)
                 if outFile != None:
                     items = [str(x).replace(',', '') for x in [N, seed, contact, cond, cenres, conres]]
@@ -133,23 +149,6 @@ def contactList(profile, resnum, cid = '', outFile = None, dmin = 0.01, dmax = 1
     if outFile != None:
         ofh.close()
     return cons, conress
-
-
-def getnSegments(residues):
-    '''<residues> a list of residues read by prody, output a list, of which the number of elements is the number of
-    segments, and each element is the length of each segments
-    '''
-    segment = [1]
-    # sort residues first by their chain ids, then by their resnums
-    sort_residues = sorted(residues, key = lambda x : (x.getChid(), x.getResnum()))
-    for i in range(1, len(sort_residues)):
-        if sort_residues[i].getChid() != sort_residues[i-1]:
-            segments.append(1)
-        elif sort_residues[i] - sort_residues[i-1] > 1:
-            segments.append(1)
-        else:
-            segments[-1] += 1
-    return segments
 
 
 def replaceBfactor (pdbf, outf, dataf, res_col = 2, score_col = -1):
@@ -194,61 +193,61 @@ def replaceBfactor (pdbf, outf, dataf, res_col = 2, score_col = -1):
 ## functions in TERMANAL
 ## to standardize input, require Prody residue object as input for residues
 
-def _neighborInFrag(res1, res2, head, path):
-    '''test if res1 is the neighbor of res2. Definition of neighbor is as in Structure paper, 
-    the central residue in a fragment is the neighbor of other residue included in the fragment.
-    '''
-    res1id = getResid(res1).strip()
-    res2c, res2n = res2.getChid(), str(res2.getResnum()) + res2.getIcode()
-    # looking for the .pdb file centred at res1
-    pdbf = path + '/' + head + '_' + res1id + '.pdb'
-    r = None
-    r = getResByInd(pdbf, res2c, res2n)
-    if r == None:
-        return 0
-    else:
-        return 1
+# def _neighborInFrag(res1, res2, head, path):
+#     '''test if res1 is the neighbor of res2. Definition of neighbor is as in Structure paper,
+#     the central residue in a fragment is the neighbor of other residue included in the fragment.
+#     '''
+#     res1id = getResid(res1).strip()
+#     res2c, res2n = res2.getChid(), str(res2.getResnum()) + res2.getIcode()
+#     # looking for the .pdb file centred at res1
+#     pdbf = path + '/' + head + '_' + res1id + '.pdb'
+#     r = None
+#     r = getResByInd(pdbf, res2c, res2n)
+#     if r == None:
+#         return 0
+#     else:
+#         return 1
+
+#
+# def neighborList(pdbf, res, path):
+#     '''return all neighbors for res in pdbf, include res itself.
+#     Will call function(_neighborInFrag)
+#     '''
+#     allres = ConRes(pdbf)
+#     head = getBase( removePath(pdbf) )
+#     path = absPath(path)
+#     nb = []
+#     for r in allres:
+#         res2id = getResid(r)
+#         if _neighborInFrag(res, res2, head, path) == 1:
+#             nb.append(res2)
+#     return nb
 
 
-def neighborList(pdbf, res, path):
-    '''return all neighbors for res in pdbf, include res itself. 
-    Will call function(_neighborInFrag)
-    '''
-    allres = ConRes(pdbf)
-    head = getBase( removePath(pdbf) )
-    path = absPath(path)
-    nb = []
-    for r in allres:
-        res2id = getResid(r)
-        if neighborInFrag(res, res2, head, path) == 1:
-            nb.append(res2)
-    return nb  
-
-
-def AsNeighborList(allres, pdbf, path):
-    '''return a dictionary describing how many time a residue receives the score from other residue in a structure (act as neighbor)
-    This is useful in averaging the raw score to get the smoothed score
-    '''
-    nn = {}
-    head = removePath( getBase(pdbf) )
-    for r in allres:
-        resid = getResid(r)
-        nn[resid] = 0
-    path = absPath(path)
-    for r in allres:
-        rid = getResid(r).strip()
-        # make a pseudofragment (not actually a pdb file)
-        listf = path + '/' + head + '_' + rid + '.list'
-        # read seeds from the list file
-        cons = readConsFromList(listf)
-        # declare the term
-        term = Term(parent = pdbf, seed = r.getChid() + str(r.getResnum()), contact = cons)
-        pseudofrag = term.makeFragments(pdbf, seeds, flank = 2, dry = True)
-        for res in pseudofrag:
-            nn[res] += 1
-    return nn
-
-def readConsFromList(listf):
+# def AsNeighborList(allres, pdbf, path):
+#     '''return a dictionary describing how many time a residue receives the score from other residue in a structure (act as neighbor)
+#     This is useful in averaging the raw score to get the smoothed score
+#     '''
+#     nn = {}
+#     head = removePath( getBase(pdbf) )
+#     for r in allres:
+#         resid = getResid(r)
+#         nn[resid] = 0
+#     path = absPath(path)
+#     for r in allres:
+#         rid = getResid(r).strip()
+#         # make a pseudofragment (not actually a pdb file)
+#         listf = path + '/' + head + '_' + rid + '.list'
+#         # read seeds from the list file
+#         cons = readConsFromList(listf)
+#         # declare the term
+#         term = Term(parent = pdbf, seed = r.getChid() + str(r.getResnum()), contact = cons)
+#         pseudofrag = term.makeFragments(pdbf, seeds, flank = 2, dry = True)
+#         for res in pseudofrag:
+#             nn[res] += 1
+#     return nn
+#
+# def readConsFromList(listf):
 
 
 # some old functions to calcultate GDT (needs identical atom numbers)
@@ -262,80 +261,80 @@ def readConsFromList(listf):
 # wSize: window size for initial segment, default is 4
 # gdtcut: 
 # return: a gdt of these two sets of atoms
-def gdtTransformation(Atoms, rAtoms, dcut = 4, wSize = 3, gdtcut = [1.0, 2.0, 4.0, 8.0], iter = 5):
-    assert rAtoms.shape[1] == 3
-    assert Atoms.shape == rAtoms.shape
-    protlen = rAtoms.shape[0]
-    maxAlign = 0
-    bestTran = None
-    bestGDT = 0
-    bestgdt = []
-    for ii in range(protlen-wSize+1):
-        flag = [False for x in range(protlen)]
-        fraglen = wSize
-        for n in range(iter):
-            for j in range(ii, ii+wSize):
-                flag[j] = True
-            # get the superposition between residues which are true
-            sub_Atoms = Atoms[ [x for x in range(len(flag)) if flag[x] == True] ]
-            sub_rAtoms = rAtoms[ [x for x in range(len(flag)) if flag[x] == True] ]
-            trans = calcTransformation(sub_Atoms, sub_rAtoms) #prody
-            t_Atoms = applyTransformation(trans, Atoms) #prody
-            # now calculated atom distance after superposition
-            for iii in range(protlen):
-                dist = spatialDistance(t_Atoms[iii], rAtoms[iii])
-                if dist < dcut:
-                    flag[iii] = True
-                else:
-                    flag[iii] = False
-            newfraglen = len([x for x in range(len(flag)) if flag[x] == True])
-            if newfraglen == fraglen:
-                break
-            fraglen = newfraglen
-        [tmpGDT, tmpgdt] = calculateGDT(t_Atoms, rAtoms, gdtcut)
-        if tmpGDT > bestGDT:
-            bestGDT = tmpGDT
-            bestgdt = tmpgdt
-            bestTran = trans
-            
-    ft_Atoms = applyTransformation(bestTran, Atoms) #prody # final transformation
-    # the contribution of each atom to gdt
-    ctb = contributionGDT(ft_Atoms, rAtoms, gdtcut)
-    return [bestGDT, bestgdt, ctb]
-                
-
-def calculateGDT(Atoms, rAtoms, gdtcut):
-    assert Atoms.shape == rAtoms.shape
-    protlen = Atoms.shape[0]
-    gdt_d = [0 for x in gdtcut]
-    gdt = []
-    for i in range(protlen):
-        for ii in range(len(gdtcut)):
-            if spatialDistance(Atoms[i], rAtoms[i]) < gdtcut[ii]:
-                gdt_d[ii] += 1
-    for j in range(len(gdtcut)):
-        gdt.append( gdt_d[j]/float(protlen) )
-    GDT = mean(gdt)
-    return [GDT, gdt_d]
- 
-def contributionGDT(atoms, ratoms, gdtcut):
-    assert atoms.shape == ratoms.shape
-    result = []
-    protlen = atoms.shape[0]
-    for i in range(protlen):
-        byres = []
-        for ii in range(len(gdtcut)):
-            if spatialDistance(atoms[i], ratoms[i]) < gdtcut[ii]:
-                byres.append(1)
-            else:
-                byres.append(0)
-        result.append(byres)
-    return result
-                   
-def spatialDistance(a, b):
-    assert len(a) == len(b)
-    d = 0
-    for i in range(len(a)):
-        d += (a[i]-b[i])**2
-    d = math.sqrt(d)
-    return d  
+# def gdtTransformation(Atoms, rAtoms, dcut = 4, wSize = 3, gdtcut = [1.0, 2.0, 4.0, 8.0], iter = 5):
+#     assert rAtoms.shape[1] == 3
+#     assert Atoms.shape == rAtoms.shape
+#     protlen = rAtoms.shape[0]
+#     maxAlign = 0
+#     bestTran = None
+#     bestGDT = 0
+#     bestgdt = []
+#     for ii in range(protlen-wSize+1):
+#         flag = [False for x in range(protlen)]
+#         fraglen = wSize
+#         for n in range(iter):
+#             for j in range(ii, ii+wSize):
+#                 flag[j] = True
+#             # get the superposition between residues which are true
+#             sub_Atoms = Atoms[ [x for x in range(len(flag)) if flag[x] == True] ]
+#             sub_rAtoms = rAtoms[ [x for x in range(len(flag)) if flag[x] == True] ]
+#             trans = calcTransformation(sub_Atoms, sub_rAtoms) #prody
+#             t_Atoms = applyTransformation(trans, Atoms) #prody
+#             # now calculated atom distance after superposition
+#             for iii in range(protlen):
+#                 dist = spatialDistance(t_Atoms[iii], rAtoms[iii])
+#                 if dist < dcut:
+#                     flag[iii] = True
+#                 else:
+#                     flag[iii] = False
+#             newfraglen = len([x for x in range(len(flag)) if flag[x] == True])
+#             if newfraglen == fraglen:
+#                 break
+#             fraglen = newfraglen
+#         [tmpGDT, tmpgdt] = calculateGDT(t_Atoms, rAtoms, gdtcut)
+#         if tmpGDT > bestGDT:
+#             bestGDT = tmpGDT
+#             bestgdt = tmpgdt
+#             bestTran = trans
+#
+#     ft_Atoms = applyTransformation(bestTran, Atoms) #prody # final transformation
+#     # the contribution of each atom to gdt
+#     ctb = contributionGDT(ft_Atoms, rAtoms, gdtcut)
+#     return [bestGDT, bestgdt, ctb]
+#
+#
+# def calculateGDT(Atoms, rAtoms, gdtcut):
+#     assert Atoms.shape == rAtoms.shape
+#     protlen = Atoms.shape[0]
+#     gdt_d = [0 for x in gdtcut]
+#     gdt = []
+#     for i in range(protlen):
+#         for ii in range(len(gdtcut)):
+#             if spatialDistance(Atoms[i], rAtoms[i]) < gdtcut[ii]:
+#                 gdt_d[ii] += 1
+#     for j in range(len(gdtcut)):
+#         gdt.append( gdt_d[j]/float(protlen) )
+#     GDT = mean(gdt)
+#     return [GDT, gdt_d]
+#
+# def contributionGDT(atoms, ratoms, gdtcut):
+#     assert atoms.shape == ratoms.shape
+#     result = []
+#     protlen = atoms.shape[0]
+#     for i in range(protlen):
+#         byres = []
+#         for ii in range(len(gdtcut)):
+#             if spatialDistance(atoms[i], ratoms[i]) < gdtcut[ii]:
+#                 byres.append(1)
+#             else:
+#                 byres.append(0)
+#         result.append(byres)
+#     return result
+#
+# def spatialDistance(a, b):
+#     assert len(a) == len(b)
+#     d = 0
+#     for i in range(len(a)):
+#         d += (a[i]-b[i])**2
+#     d = math.sqrt(d)
+#     return d

@@ -61,11 +61,11 @@ def removeHomo(matchf, homo, usedRows = None, dry = True, inhead = None, outhead
         assert (inhead != None) and (outhead != None)
         omatchf = matchf.replace(inhead, outhead)
         oseqf = changeExt(omatchf, 'seq')
-        with open(omatchf, 'w') as om, open(oseqf, 'w') as os:
+        with open(omatchf, 'w') as omf, open(oseqf, 'w') as osf:
             slines = open(seqf).readlines()
             for r in updatedRows:
-                om.write(lines[r])
-                os.write(slines[r])                
+                omf.write(lines[r])
+                osf.write(slines[r])
         if log:
             logf = changeExt(omatchf, 'log')
             with open(logf, 'w') as log:
@@ -83,7 +83,7 @@ def trimByRMSD (inp, coln, rcut, usedRows = None, dry = True, inhead = None, out
     <outhead> the header of the output file to replace the input header
     '''
     assert getExt(inp) != ('match' or 'seq'), 'input not correctly provided! Error in ' + inp
-    if ext == 'match':
+    if getExt(inp) == 'match':
         match = inp
         seq = changeExt(inp,'seq')
     else:
@@ -103,12 +103,12 @@ def trimByRMSD (inp, coln, rcut, usedRows = None, dry = True, inhead = None, out
         assert (inhead != None) and (outhead != None)
         omatchf = match.replace(inhead, outhead)
         oseqf = changeExt(omatchf, 'seq')
-        with open(omatchf, 'w') as om, open(oseqf, 'w') as os, open(match) as mf, open(seq) as sf:
+        with open(omatchf, 'w') as omf, open(oseqf, 'w') as osf, open(match) as mf, open(seq) as sf:
             mlines = mf.readlines()
             slines = sf.readlines()            
             for r in updatedRows:
-                om.write(mlines[r])
-                os.write(slines[r])      
+                omf.write(mlines[r])
+                osf.write(slines[r])
     return updatedRows      
 
 
@@ -134,14 +134,15 @@ def rmsdOfnseq(col, n, sorted = True):
     return [col[n-1], n]
 
 
-def readColumn (file, coln, top = None):
+def readColumn (file, coln, top = None, skiprow = 0):
     '''<file> a file to read
     <coln> a column number, start with 0
     <top> top number of lines to read 
     return: a list of column items
     '''
     assert os.path.isfile(file)
-    lines = file2array(file)
+    assert isinstance(skiprow, int) and (skiprow > 0)
+    lines = file2array(file)[skiprow:]
     col = []
     count = 0
     for line in lines:
@@ -156,7 +157,7 @@ def readColumn (file, coln, top = None):
     return col
 
 
-def readMultiColumn (file, coln, top = None):
+def readMultiColumn (file, coln, top = None, skiprow = 0):
     '''<file> a file to read
     <coln> a list of column numbers to read, start with 0
     <top> top number of lines to read
@@ -164,7 +165,7 @@ def readMultiColumn (file, coln, top = None):
     '''
     cols = []
     for n in coln:
-        cols.append(readColumn(file, n, top))
+        cols.append(readColumn(file, n, top, skiprow))
     return cols
 
 
@@ -186,24 +187,24 @@ def informationContent(col, lowcount = True):
             H[item] = 1
         else:
             H[item] += 1
-    I = log(20)/log(2)
+    I = math.log(20)/math.log(2)
     for k in H.keys():
         p = float(H[k])/lencol
-        I += p*log(p)/log(2)
+        I += p*math.log(p)/math.log(2)
     if lowcount:
-        I -= 19.0/(2*lencol*log(2))
+        I -= 19.0/(2*lencol*math.log(2))
         if I < 0:
             I = 0
     return I
 
 
 def informationContentQuick(col, norm = False):
-    I = log(20)/log(2)
+    I = math.log(20)/math.log(2)
     col = map(float, col)
     for p in col:
         if not norm:
             p /= sum(col)
-        I += p * log(p)/log(2)
+        I += p * math.log(p)/math.log(2)
     return I
 
 
@@ -269,7 +270,7 @@ def seq321(seqf, outf, start = 1):
 
 def createHomoProfile(fastaf, outf):
     blastout = changeExt(fastaf, 'blastout')
-    cmd = _blast + '/blastpgp -d ~fzheng/ironfs/blast/db/pdbaa/pdbaa -i ' + fastaf + ' -b 0 -e 1.0 -v 10000 -o ' + blastout
+    cmd = PATH_blast + '/blastpgp -d ~fzheng/ironfs/blast/db/pdbaa/pdbaa -i ' + fastaf + ' -b 0 -e 1.0 -v 10000 -o ' + blastout
     os.system(cmd)
     with open(blastout) as bo, open(outf, 'w') as hf:
         homologs =[]
@@ -278,9 +279,9 @@ def createHomoProfile(fastaf, outf):
                 if len(homologs) > 0:
                     hf.write(' '.join(homologs) + '\n')
                 homologs = []
-                homologs.append(l.strip().split()[-1])
-            elif l.startswith('pdb'):
-                pid, chain = l.split()[0].split('|')[1:]
+                homologs.append(bl.strip().split()[-1])
+            elif bl.startswith('pdb'):
+                pid, chain = bl.split()[0].split('|')[1:]
                 pid = pid.lower()
                 homologs.append(pid + '_' + chain)
             hf.write(' '.join(homologs) + '\n')

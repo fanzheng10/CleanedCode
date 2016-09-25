@@ -1,83 +1,84 @@
-import General, Terms, Master, Stability, Cluster
-import os, argparse
+from General import *
+import Master, Stability, Cluster, Analyze
+import pickle, shelve #  for sharing params
 
+SB = selfbin(sys.argv[0])
 par = argparse.ArgumentParser()
-# mutation list
-par.add_argument('--l', required = True, help = 'a list of mutations')
-par.add_argument('--i', default = os.getcwd(), required = True, help = 'the directory to find the input structures')
-par.add_argument('--sd', help = 'the directory of the searching database')
-par.add_argument('--cp', default = '', help = 'the list of contact potential')
-par.add_argument('--he', help = 'the header of the output files')
-par.add_argument('--pb', default = General._blast, help = 'path to BLAST')
-par.add_argument('--pu', default = General._usearch, help = 'path to USearch')
-par.add_argument('--c1', default = 20000, type = int, help = 'cutoff for top N matches')
-par.add_argument('--c2', default = 100, type = int, help = 'the criteria of increasing the order of sub-TERMs')
-par.add_argument('--c3', default = 3, type = int, help = 'the maximum order of sub-TERMs to consider')
+# inherit the parameter space from mutationListIteration.py
+par.add_argument('--pkl', required = True, help = 'a shared pickle file, to pass arguments from parent script')
+# make sure the argument do not clash between the two name space
+par.add_argument('--p', nargs = '+', required = True, help = 'term structure')
+par.add_argument('--homo', nargs = '*', help = 'a list of PDB-id to avoid as homologs')
+par.add_argument('--rmsd', nargs = '+', required = True, help = 'rmsd cutoff')
+par.add_argument('--crind', nargs = '+', required=True, help='the index of the seed residue in the ensemble')
+par.add_argument('--ncon', required=True, help='the maximum number of contacts in this job, only used to create the finish label')
 args = par.parse_args()
 
+odir = os.getcwd()
+ldir = Cluster.createLocalSpace()
 
-# read the input file and create a mutation list
-pdbs = []
-positions =[]
-with open(args.l) as mutf:
-	for l in mutf:
-		mut = Stability.getMutation(l.strip())
-		pdb, pos = mut.p, mut.dir
-		if not pdb in pdbs:
-			pdbs.append(pdb)
-		if not pos in positions:
-			positions.append(pos)
+os.chdir(ldir)
+os.system('cp ' + args.pkl + ' ./')
+pklname = removePath(args.pkl)
+pkl = open(pklname)
+shared = pickle.load(pkl)
+pkl.close()
+argsdict = vars(args)
+argsdict.update(shared)
 
+# make sure the database has been copied, as usual
+if args.dbl == None:
+	dblist = args.db + '/list'
+else:
+	dblist = args.dbl
+sub.call(['perl', '-w', SB + '/copyDBLocally.pl', '-n', removePath(args.db), '-l', args.db+'/list'])
 
-# run confind for all structures
-for pdb in pdbs:
-	pdbf = args.i + General.changeExt(pdb, 'pdb')
-	assert os.path.isfile(pdbf), 'the pdb file '+pdbf +' does not exist; quit...'
-	confind_out = General.changeExt(pdbf, '.conf')
-	if os.path.isfile(confind_out):
-		continue
-	else: # run confind
-		Master.confind('--pp',
-					   p=pdbf, o=confind_out,
-					   rLib=General._rotLib)
+# open the sequence database
+path_seqdb = '/home/anthill/fzheng/home/searchDB/statistics/bc-30-sc-20141022.peprm2.db'
+seqdb = shelve.open(path_seqdb)
 
 
-# contact identification
-pos2cons = {}
-pos2pdb = {}
+# run MASTER search
+def runMaster(pdb, rmsdcut):
+	Master.createPDS(type='query',
+					 pdb=pdb,
+				 	)
+	Master.masterSearch(query=changeExt(pdb, 'pds'),
+						targetList=dblist,
+						seqOut=changeExt(pdb, 'seq'),
+						matchOut=changeExt(pdb, 'match'),
+						rmsdCut=rmsdcut,
+						topN=args.c1
+						)
 
-for pos in positions:
-	odir = os.getcwd()
-	os.mkdir(pos)
-	os.chdir(pos)
-	pid, ipos = pos.split('_')
-	icid, iresnum = ipos[0], ''.join(ipos[1:])
-	conListf = pos + '.conlist'
-	cons, _ = Terms.contactList(profile=args.i+'/'+pid+'.conf',
-								resnum=iresnum, cid=icid,
-								outFile=conListf,
-								dmin=0.02, monomer=True)
-	pos2pdb[pos] = args.i+'/'+pid+'.pdb'
-	pos2cons[pos] = cons
+for i in range(len(args.p)):
+	frag = args.p[i]
+	os.system('cp ' + odir+'/'+frag + ' ./')
+	runMaster(frag, float(args.rmsd[i]))
+	seqf = changeExt(frag, 'seq')
+	matchf = changeExt(frag, 'match')
+	if len(args.homo) > 0:
+		rowsremain_nh = Analyze.removeHomo(matchf, args.homo) # dry run
+		rowsremain_nr = Stability.removeRedundancy(matchf, args.he, int(args.crind[i]), seqdb, usedRows=rowsremain_nh)
+	else:
+		rowsremain_nr = Stability.removeRedundancy(matchf, args.he, int(args.crind[i]), seqdb)
 
+	# write result
+	nseqf, nmatchf = args.he + '_' + seqf, args.he + '_' + matchf
+	with open(nseqf, 'w') as nr_mfh, open(nmatchf, 'w') as nr_sfh, open(seqf) as sfh, open(matchf) as mfh:
+		n = 0
+		for ml in mfh:
+			if n in rowsremain_nr:
+				nr_mfh.write(ml)
+			n+=1
+		n = 0
+		for sl in sfh:
+			if n in rowsremain_nr:
+				nr_sfh.write(sl)
+			n+=1
+	# move files
+	shutil.move(nseqf, odir+'/'+nseqf)
+	shutil.move(nmatchf, odir+'/'+nmatchf)
 
-# recursive fragmentation and master search
-for pos in positions:
-	iTerms = []
-	cons = pos2cons[pos]
-	# create self term without contact
-	aterm = Terms.Term(parent=pos2pdb[pos],
-					   seed=, contact=)
-
-
-
-
-# create homologs list with blast 
-
-# homologs removal 
-
-# redundancy removal
-
-# 3 letter to digital
-
-
+os.chdir(odir)
+os.system('touch .finished.'+args.ncon)

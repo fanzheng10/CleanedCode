@@ -79,10 +79,10 @@ os.chdir(odir)
 
 # the fpd part
 pepfrags = os.path.realpath(odir+'/pepfrags/')
-if os.path.isdir(pepfrags):
+if not os.path.isdir(pepfrags):
     os.makedirs(pepfrags)
-flag = PATH_fpddemo + '/input_files/flags'
-pflag = PATH_fpddemo + '/input_files/prepack_flags'
+flag = SELFBIN + '/flags'
+pflag = SELFBIN + '/prepack_flags'
 rosetta_db = PATH_rosetta + '/main/database'
 rosetta_exe = PATH_rosetta + '/main/source/bin'
 
@@ -91,7 +91,7 @@ os.system('cp '+ mdir + '/start.pdb ' + ldir + '/start.pdb')
 os.system('cp '+ mdir + '/start.pdb ' + ldir + '/native.pdb')
 os.chdir(ldir)
 
-if args.ab != 0: # not tested, now only work for natural aa
+if args.ab != 0: # if need to change the number of output model, modify the flag files
     # make fragments
     fragf = '/'.join([odir, args.pname, '.fragready'])
     if args.ab == 2:
@@ -99,13 +99,13 @@ if args.ab != 0: # not tested, now only work for natural aa
             time.sleep(10)
     else:
         os.system(PATH_fpddemo + '/scripts/prep_abinitio.sh 0000')
-        os.system('cp -dr frags '+pepfrags+args.pname)
+        os.system('cp -dr frags '+pepfrags+'/'+args.pname)
         os.system('touch '+fragf)
     # copy stuff
     os.system('cp '+flag+' flags')
     os.system('cp '+pflag+' prepack_flags')
     if not os.path.isdir('frags'):
-        os.system('cp -r '+pepfrags+args.pname+' frags')
+        os.system('cp -r '+pepfrags+'/'+args.pname+' frags')
     # run FPD
     os.system(PATH_fpddemo +'/prepack_example')
     os.system(PATH_fpddemo +'/run_example')
@@ -136,8 +136,8 @@ else:
                      '-pep_refine',
                      '-ex1',
                      '-ex2aro',
-                     # '-nstruct', '500',
-                     '-nstruct', '5', # 5 is for test, 500 is for production
+                     '-nstruct', '200',
+                     # '-nstruct', '5', # 5 is for test, 500 is for production
                      '-scorefile', 'score.sc',
                      '-chemical:patch_selectors', 'PEPTIDE_CAP', '-in:Ntermini B',
                      '-score:weights talaris2013_no_rama_paapp_fz']# custom scoring function

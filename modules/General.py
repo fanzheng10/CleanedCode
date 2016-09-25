@@ -102,7 +102,7 @@ PATH_confind = '/home/anthill/fzheng/home/confind/confind'
 PATH_master = '/home/grigoryanlab/library/MASTER/bin'
 PATH_rotLib = '/home/grigoryanlab/library/confind/rotlibs/DB-2010'
 PATH_termaster = ''
-PATH_usearch = '' # usearch is a software to cluster sequence based on sequence identity and remove redundancy
+PATH_usearch = '/home/anthill/fzheng/home/software/usearch8.0' # usearch is a software to cluster sequence based on sequence identity and remove redundancy
 
 
 PATH_namd = '/home/grigoryanlab/library/bin/namd2'
