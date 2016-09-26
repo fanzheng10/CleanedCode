@@ -28,15 +28,15 @@ namd_args = ['-p', args.p,
              '--mini', '5000',
              '--top', default_top,
              '--par', default_par,
-             '--psfopts', '"first nter; last cter|first ace; last ct3"',
+             # '--psfopts', '"first nter; last cter|first ace; last ct3"',
+             '--psfopts', '"first nter; last cter|first ace; last cter"',
              '--np', '6', '--pme',
              '--odir', ldir2,
              '--tmp', ldir1,
              '--dry']
 cmd_setup = ['perl -w', sb + '/mdNAMD.pl'] + namd_args
-cmd_setup = ' '.join(cmd_setup
-                     )
-cmd_setup = cmd_setup.replace('dummy.pdb', args.p)
+cmd_setup = ' '.join(cmd_setup)
+
 if args.change != None:
     assert len(args.change) % 2 == 0
     for i in range(0, len(args.change), 2):
@@ -51,7 +51,7 @@ odir = os.getcwd()
 os.system(cmd_setup)
 Cluster.destroyLocalSpace(ldir1)
 os.chdir(ldir2)
-# os.system('rm -r vmd*')
+os.system('rm -r vmd*')
 
 # need to have a subprocess with timeout, because wants to stop MD and allow certain time before job terminated
 class Command:
@@ -83,4 +83,4 @@ command.run(timeout)
 
 # clean up
 os.chdir(odir)
-os.system('mv '+ldir2 + ' ./mdData')
+os.system('mv '+ldir2 + '/* .')
