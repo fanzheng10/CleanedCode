@@ -1,7 +1,7 @@
 __author__ = 'fanzheng'
 
 from General import *
-import Terms, Master, Stability, Cluster
+import Terms, Master, Stability, Cluster, Analyze
 import pickle, itertools
 
 SB = selfbin(sys.argv[0])
@@ -60,12 +60,7 @@ for pdb in pdbs:
 
 
 # find homologs
-Homo = {}
-if args.homof != None:
-	with open(args.homof) as hf:
-		for hl in hf:
-			items = hl.strip().split()
-			Homo[items[0]] = items[1:]
+Homo =  Analyze.findHomo(args.homof)
 
 # contact identification
 pos2cons = {}
@@ -125,7 +120,7 @@ for pos in positions:
 
 	for tm in iTerms: #
 		crind = tm.findResidue(seed[0], seed[1:]) # index of the seed residue in the corresponding term
-		rmsd_eff = Stability.rmsdEff(tm.getSegLen(), 18, 1.0)
+		rmsd_eff = Stability.rmsdEff(tm.getSegLen())
 		pdbs.append(tm.pdbf)
 		rmsds.append(str(rmsd_eff))
 		crinds.append(str(crind))
@@ -196,7 +191,7 @@ while Ncon <= args.maxcon:
 								   contact=sortset)
 							Hterm.makeFragment(flank=1)
 							morepdbs.append(Hterm.pdbf)
-							morermsds.append(str(Stability.rmsdEff(Hterm.getSegLen(), 18, 1.0)))
+							morermsds.append(str(Stability.rmsdEff(Hterm.getSegLen())))
 							morecrinds.append(str(Hterm.findResidue(seed[0], seed[1:])))
 
 					cmd = ['python', SB + '/EnsemblePreparation.py',
@@ -210,6 +205,10 @@ while Ncon <= args.maxcon:
 
 					new_jobid = pos+'.'+str(Ncon)
 					job = Cluster.jobOnCluster([cmd], new_jobid, odir+'/'+pos + '/.finished.'+str(Ncon))
+					jobs[new_jobid] = job
 					job.submit(3)
 					time.sleep(0.5)
 	Ncon +=1
+
+# wait all jobs to finish
+Cluster.waitJobs(jobs, type='dict', giveup_time=1)

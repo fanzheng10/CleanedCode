@@ -1,6 +1,9 @@
-from prody import *
+# from prody import *
 from General import *
-confProDy(verbosity='critical')
+found = carefulImport('prody')
+if found:
+    from prody import *
+    confProDy(verbosity='critical')
 
 a2aaa = {
 'A': 'ALA', 'R': 'ARG', 'N': 'ASN', 'D': 'ASP', 'C': 'CYS', 'Q': 'GLN', 

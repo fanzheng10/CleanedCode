@@ -65,7 +65,7 @@ for i in range(len(args.p)):
 
 	# write result
 	nseqf, nmatchf = args.he + '_' + seqf, args.he + '_' + matchf
-	with open(nseqf, 'w') as nr_mfh, open(nmatchf, 'w') as nr_sfh, open(seqf) as sfh, open(matchf) as mfh:
+	with open(nseqf, 'w') as nr_sfh, open(nmatchf, 'w') as nr_mfh, open(seqf) as sfh, open(matchf) as mfh:
 		n = 0
 		for ml in mfh:
 			if n in rowsremain_nr:

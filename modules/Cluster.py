@@ -66,25 +66,46 @@ def qsub(cmds, fileName=None, mem=2, hrs=3, ironfs=True, opts=[], maxJobs=2500, 
     return jobid  # will return job id
 
 
-def waitJobs(jobs, sleep_time=120, rerun_time=24, giveup_time=3):
+def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3):
     odir = os.getcwd()
     time.sleep(sleep_time)
-    while len(jobs)>0:
-        for j in jobs:
-            j.checkjob()
-            if j.running == 0:
-                jobs.remove(j)
-                if j.checkfinish() == 0:
-                    print('Job about ' + j.myid + ' may have died ...')
-                    if j.tried > giveup_time:
-                        print('have failed 3 times, give up ...')
-                        continue
-                    print('resubmitting ... ')
-                    os.chdir(j.myid)
-                    j.submit(rerun_time)
-                    jobs.append(j)
-                    os.chdir(odir)
-        print('Running, '+ str(len(jobs)) + ' jobs left ...')
+    if type == 'list':
+        assert isinstance(jobs, list)
+        while len(jobs)>0:
+            for j in jobs:
+                j.checkjob()
+                if j.running == 0:
+                    jobs.remove(j)
+                    if j.checkfinish() == 0:
+                        print('Job about ' + j.myid + ' may have died ...')
+                        if j.tried > giveup_time:
+                            print('have failed 3 times, give up ...')
+                            continue
+                        print('resubmitting ... ')
+                        os.chdir(j.myid)
+                        j.submit(rerun_time)
+                        jobs.append(j)
+                        os.chdir(odir)
+            print('Running, '+ str(len(jobs)) + ' jobs left ...')
+    if type == 'dict':
+        assert isinstance(jobs, dict)
+        while len(jobs)>0:
+            for k in jobs.keys():
+                j = jobs[k]
+                j.checkjob()
+                if j.running == 0:
+                    jobs.pop(k)
+                    if j.checkfinish() == 0:
+                        print('Job about ' + j.myid + ' may have died ...')
+                        if j.tried > giveup_time:
+                            print('have failed 3 times, give up ...')
+                            continue
+                        print('resubmitting ... ')
+                        os.chdir(j.myid)
+                        j.submit(rerun_time)
+                        jobs[k] = j
+                        os.chdir(odir)
+            print('Running, '+ str(len(jobs)) + ' jobs left ...')
 
 
 def numJobs(u='fzheng'):

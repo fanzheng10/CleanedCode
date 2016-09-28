@@ -94,6 +94,16 @@ def writeItems(alist, ofh, sep='\t'):
     ofh.write(string)
 
 
+def carefulImport(mod):
+    import imp
+    found = False
+    try:
+        imp.find_module(mod)
+        found = True
+    except ImportError:
+        print('Warning:' + mod + ' is not an existing module')
+    return found
+
 ### Interface ###
 # provide interface to other programs at steady paths, such as MASTER, MD, confind, Rosetta, etc.
 

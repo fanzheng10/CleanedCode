@@ -15,6 +15,7 @@ def getConD (cmap, res1, res2):
         if ( l.find( res1+'\t' ) >= 0 ) and ( l.find( res2+'\t' ) >=0 ):
             arr = l.split()
             return float(arr[3])
+    mapf.close()
     return 0 
 
 # from one line in the .match file, parse the PDB_chain id
@@ -134,14 +135,14 @@ def rmsdOfnseq(col, n, sorted = True):
     return [col[n-1], n]
 
 
-def readColumn (file, coln, top = None, skiprow = 0):
+def readColumn (file, coln, top = -1, skiprow = 0):
     '''<file> a file to read
     <coln> a column number, start with 0
     <top> top number of lines to read 
     return: a list of column items
     '''
     assert os.path.isfile(file)
-    assert isinstance(skiprow, int) and (skiprow > 0)
+    assert  skiprow >=0
     lines = file2array(file)[skiprow:]
     col = []
     count = 0
@@ -151,13 +152,13 @@ def readColumn (file, coln, top = None, skiprow = 0):
         else:
             col.append(line.split()[coln])
         count += 1
-        if top != None:
+        if top > 0:
             if count == top:
                 break
     return col
 
 
-def readMultiColumn (file, coln, top = None, skiprow = 0):
+def readMultiColumn (file, coln, top = -1, skiprow = 0):
     '''<file> a file to read
     <coln> a list of column numbers to read, start with 0
     <top> top number of lines to read
@@ -285,3 +286,12 @@ def createHomoProfile(fastaf, outf):
                 pid = pid.lower()
                 homologs.append(pid + '_' + chain)
             hf.write(' '.join(homologs) + '\n')
+
+
+def findHomo(homof):
+    Homo = {}
+    with open(homof) as hf:
+        for hl in hf:
+            items = hl.strip().split()
+            Homo[items[0]] = items[1:]
+    return Homo
