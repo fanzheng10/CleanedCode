@@ -8,6 +8,13 @@ SB = selfbin(sys.argv[0])
 par = argparse.ArgumentParser()
 par.add_argument('--p', required=True, help='input PDB file')
 par.add_argument('--homof', help='the file with homologous information')
+par.add_argument('--db', default = '/home/anthill/fzheng/ironfs/searchDB/bc-30-sc-20141022-newpds', help = 'the directory of the searching database')
+par.add_argument('--dbl', help = 'list of the searching database')
+par.add_argument('--he', help = 'the header of the output files')
+par.add_argument('--c1', default = 20000, type = int, help = 'cutoff for top N matches')
+par.add_argument('--c2', default = 100, type = int, help = 'the criteria of increasing the order of sub-TERMs')
+par.add_argument('--c3', default = 2, type = int, help = 'the maximum order of sub-TERMs to consider')
+par.add_argument('--nr', default=0.4, type=float, help='the level of redundancy removal')
 args = par.parse_args()
 
 # save input argument
@@ -26,10 +33,13 @@ if not os.path.isfile(confind_out):
 
 G = conGraph.conGraph(confind_out)
 
-Homo =  Analyze.findHomo(args.homof)
-homos = Homo[getBase(args.p)]
+homos = []
+if args.homof != None:
+    Homo =  Analyze.findHomo(args.homof)
+    homos = Homo[getBase(args.p)]
 
 Jobs = []
+dirname = removePath(getBase(args.p))
 
 selfts = []
 # search all local fragments
@@ -52,6 +62,8 @@ for n in G.nodes():
     job.submit(3)
     time.sleep(0.5)
 
+Cluster.waitJobs(Jobs, giveup_time=1)
+
 # search all pair fragments
 pairts = []
 for e in G.edges():
@@ -59,7 +71,8 @@ for e in G.edges():
     t = Terms.Term(parent=args.p, seed=r1, contact=[r2])
     t.makeFragment(flank=1)
     pairts.append(t)
-    crind =  t.findResidue(r1[0], r1[1:]) # should consider two positions in redundancy removal; but worry about that later
+    cenr = Terms.adhocCentralResidue(dirname, args.he, [r1, r2])
+    crind =  t.findResidue(cenr[0], cenr[1:]) # should consider two positions in redundancy removal; but worry about that later
     rmsd_eff = Stability.rmsdEff(t.getSegLen())
     cmd = ['python', SB + '/EnsemblePreparation.py',
            '--p', t.pdbf,
@@ -82,8 +95,8 @@ tripts = []
 for n in G.nodes():
     for nn1 in G.neighbors(n):
         for nn2 in G.neighbors(n):
-            seqf1 = '_'.join([args.he, getBase(args.p), n, nn1]) + '.seq'
-            seqf2 = '_'.join([args.he, getBase(args.p), n, nn2]) + '.seq'
+            seqf1 = '_'.join([args.he, dirname, n, nn1]) + '.seq'
+            seqf2 = '_'.join([args.he, dirname, n, nn2]) + '.seq'
         if (not os.path.isfile(seqf1)) or (not os.path.isfile(seqf2)):
             continue
         else:
@@ -100,7 +113,8 @@ for n in G.nodes():
                 t = Terms.Term(parent=args.p, seed=n, contact=[nn1, nn2])
                 t.makeFragment(flank=1)
                 tripts.append(t)
-                crind =  t.findResidue(r[0], r[1:]) # should consider two positions in redundancy removal; but worry about that later
+                cenr = Terms.adhocCentralResidue(dirname, args.he, [n,nn1,nn2])
+                crind =  t.findResidue(cenr[0], cenr[1:]) # should consider two positions in redundancy removal; but worry about that later
                 rmsd_eff = Stability.rmsdEff(t.getSegLen())
                 cmd = ['python', SB + '/EnsemblePreparation.py',
                        '--p', t.pdbf,

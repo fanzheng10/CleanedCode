@@ -176,7 +176,7 @@ def replaceBfactor (pdbf, outf, dataf, res_col = 2, score_col = -1):
             plspl = pl.split()
             cid, resnum = pl[21].strip(), pl[22:27].strip()
 
-            if (cidc + resnum in dat) == False:
+            if (cid + resnum in dat) == False:
                 bfact = ''.rjust(6)
             else:
                 bfact = ('%.3f' % float(dat[cidc + resnum])).rjust(6)
@@ -186,9 +186,21 @@ def replaceBfactor (pdbf, outf, dataf, res_col = 2, score_col = -1):
                 left = pl[0:60]          
                 right = pl[66:]
                 of.write(left + bfact + right + '\n')
-            if len(l) <= 60:
+            if len(pl) <= 60:
                 left = pl.ljust(60)
                 of.write(left + bfact + '\n')
+
+def adhocCentralResidue(dirname, head, rlist):
+    nhits = []
+    for r in rlist:
+        seqf = head+'_'+dirname+'.seq'
+        nhit = 0
+        with open(seqf) as sf:
+            for sl in sf:
+                nhit+=1
+        nhits.append(nhit)
+    maxi = nhits.index(max(nhits))
+    return rlist[maxi]
 
 ## functions in TERMANAL
 ## to standardize input, require Prody residue object as input for residues

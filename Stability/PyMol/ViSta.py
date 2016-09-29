@@ -63,22 +63,25 @@ def showParamsValue(mut, matf):
     wt = t2s(seedres[0])
 
     selfscore = optParams[aaindex[mut]] - optParams[aaindex[wt]]
-    totalScore += selfscore
-    cmd.label(selection=seedsele, expression=float(selfscore))
+    totalScore += float(selfscore)
+    cmd.label(selection=seedsele, expression=format(float(selfscore), '.2f'))
     cons2, conres2 = [], []
     for i in range(len(cons)):
         if conds[i] > 0.02:
             cons2.append(cons[i])
             conres2.append(conres[i])
+
     for i in range(len(cons2)):
         paramsi = optParams[20 + 400*i: 20+400*(i+1)].reshape(20,20)
         conind = aaindex[t2s(conres2[i])]
         consele = 'c. ' + cons2[i][0] + ' and i. ' + cons2[i][1:] + ' and n. CA'
         pair_diff_i = paramsi[conind, aaindex[mut]] - paramsi[conind, aaindex[wt]]
         totalScore += pair_diff_i
-        cmd.label(selection=consele, expression= pair_diff_i)
+        cmd.distance('dist' + str(i),seedsele, consele)
+        cmd.hide('labels', 'dist'+str(i))
+        cmd.label(selection=consele, expression= format(float(pair_diff_i), '.2f'))
 
-    return seedsele, totalScore
+    return seedsele, format(float(totalScore), '.2f')
 cmd.extend( "showParamsValue", showParamsValue )
 
 

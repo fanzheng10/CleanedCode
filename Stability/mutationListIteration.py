@@ -15,9 +15,8 @@ par.add_argument('--he', help = 'the header of the output files')
 par.add_argument('--homof', help='the file with homologous information')
 par.add_argument('--c1', default = 20000, type = int, help = 'cutoff for top N matches')
 par.add_argument('--c2', default = 100, type = int, help = 'the criteria of increasing the order of sub-TERMs')
-par.add_argument('--c3', default = 3, type = int, help = 'the maximum order of sub-TERMs to consider')
+par.add_argument('--c3', default = 2, type = int, help = 'the maximum order of sub-TERMs to consider')
 par.add_argument('--nr', default=0.4, type=float, help='the level of redundancy removal')
-par.add_argument('--maxcon', default=2, type=int, help='the maximum contact an ensemble can have')
 args = par.parse_args()
 
 # save input argument
@@ -146,7 +145,7 @@ os.chdir(odir)
 # now considering higher-order fragments
 Ncon = 2
 
-while Ncon <= args.maxcon:
+while Ncon <= args.c3:
 	positions_copy = [x for x in positions]
 	while len(positions_copy) > 0:
 		for pos in positions_copy:

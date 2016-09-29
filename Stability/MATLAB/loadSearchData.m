@@ -5,7 +5,6 @@ self = 20;
 pair = 400;
 cennum = regexp(folder, '_', 'split');
 cennum = cennum{end};
-cennum = cennum([1, 3:end]);
 files = dir(sprintf('%s/*.pdb', folder));
 
 conNames = {};
@@ -108,7 +107,7 @@ for i = 1: length(files)
 end
 
 % control, only use low level fragments
-usedRows = find(sum(Sparse, 2) <=2);
+usedRows = find(sum(Sparse, 2) <=3);
 % usedRows = 1:size(rightVec, 1);
 
 Sparse = Sparse(usedRows, :);
@@ -120,14 +119,14 @@ leftMat = Sparse;
 
 %% read contact potential approritately
 [~, name, ~] = fileparts(folder);
-consinfo = textscan(fopen(sprintf('%s/%s.cons', folder, name)), '%s%s%s%s%f%s%s');
-connames_here = strrep(consinfo{4}, ',', '');
-condegree = consinfo{5};
+consinfo = textscan(fopen(sprintf('%s/%s.conlist', folder, name)), '%s%s%s%f%s%s');
+connames_here = strrep(consinfo{3}, ',', '');
+condegree = consinfo{4};
 [conInUse, tempind] = ismember(connames_here, conNames);
 tempind = tempind(logical(tempind));
 condegreeUsed(tempind) = condegree(conInUse);
 
-conres = consinfo{7};
+conres = consinfo{6};
 conresid = zeros(length(conres),1);
 for c = 1: length(conres)
     conresid(c) = aaIndex(conres{c});

@@ -1,13 +1,9 @@
-# load psf and dcd
-mol new {namdrun_run.namdout.dcd} type {dcd} first 0 last -1 step 1 waitfor -1
-mol addfile {_start_wat.psf} type {psf} first 0 last -1 step 1 waitfor -1 0
-
 # functon to calculate rmsd
 proc rmsd_through_time {{sel}} {
-	set output [open "mdAnal.dat" a]
-	puts $output "rmsd of ($sel)"
+	set output [open "mdRmsd.dat" a]
 	set reference [atomselect 0 $sel frame 1]
 	set compare [atomselect 0 $sel]
+	puts $output "rmsd of ($sel)"
 	set numsteps [molinfo 0 get numframes]
 	for {set frame 1} {$frame < $numsteps} {incr frame} {
 		$compare frame $frame
@@ -19,43 +15,137 @@ proc rmsd_through_time {{sel}} {
 	close $output
 }
 
+proc myrmsf {{sel}} {
+  set output [open "mdRmsf.dat" a]
+  set snaps [atomselect 0 $sel]
+  set rmsf [measure rmsf $snaps]
+  puts $output "($sel):\t$rmsf"
+  close $output
+}
+
 # funciton to measure distance
 proc measure_dist {sl1 sl2} {
 	set s1 [atomselect 0 $sl1]
 	set s2 [atomselect 0 $sl2]
-	set output [open "mdAnal.dat" a]
+	set output [open "mdDist.dat" a]
 	puts $output "distance between ([$s1 text]) and ([$s2 text])"
 	set dist [measure bond [list [$s1 list] [$s2 list]] frame all]
 	puts $output "$dist"
 	close $output
 }
-	
-# customized part
-# calculate rmsd for different selection
-set sel "chain B and resid 4 5 6 and not hydrogen"
-rmsd_through_time $sel
 
-set sel "chain B and not hydrogen"
-rmsd_through_time $sel
-
-set sel "chain B and resid 4 5 6 and backbone"
-rmsd_through_time $sel
-
-set sel "chain B and backbone"
-rmsd_through_time $sel
+set val1 [lindex $argv 0]
+set val2 [lindex $argv 1]
 
 # calculate distance for different selection
-mol new {/home/ironfs/scratch/grigoryanlab/fzheng/PDZ_unnatural/P95P3/MD/K-DIL-Q-S-DIL-ASP/multishort/pert0/namdrun_run.namdout.dcd} type {dcd} first 0 last -1 step 1 waitfor -1
-mol addfile {/home/ironfs/scratch/grigoryanlab/fzheng/PDZ_unnatural/P95P3/MD/K-DIL-Q-S-DIL-ASP/multishort/pert0/_start_wat.psf} type {psf} first 0 last -1 step 1 waitfor -1 0
+# need to load molecules again
+mol new {namdrun_run.namdout.dcd} type {dcd} first 100 last -1 step 1 waitfor -1
+mol addfile {_start_wat.psf} type {psf} first 100 last -1 step 1 waitfor -1 0
 
-set sel1 "chain A and resid 24 and name N"
-set sel2 "chain B and resid 6 and name OD1"
-set sel3 "chain B and resid 6 and name OD2"
-set sel4 "chain A and resid 72 and name NE2"
-set sel5 "chain B and resid 4 and name OG"
+# C-terminus pairing
 
-measure_dist $sel1 $sel2
-measure_dist $sel1 $sel3
-measure_dist $sel4 $sel5
+# PSD95
+#set selN1 "chain A and resid 23 and name N"
+#set selN2 "chain A and resid 24 and name N"
+#set selN3 "chain A and resid 25 and name N"
+
+# N2P2
+set selN1 "chain A and resid 17 and name N"
+set selN2 "chain A and resid 18 and name N"
+set selN3 "chain A and resid 19 and name N"
+
+
+if [expr $val1 == 0] { # when using carboxyl group
+	set selO1 "chain B and resid 6 and name OD1"
+	set selO2 "chain B and resid 6 and name OD2"
+	measure_dist $selN1 $selO1
+	measure_dist $selN1 $selO2
+	measure_dist $selN2 $selO1
+	measure_dist $selN2 $selO2
+	measure_dist $selN3 $selO1
+	measure_dist $selN3 $selO2
+} elseif [expr $val1 == 1] { # when using normal C-terminus
+	set selO1 "chain B and resid 6 and name OT1"
+	set selO2 "chain B and resid 6 and name OT2"
+	measure_dist $selN1 $selO1
+	measure_dist $selN1 $selO2
+	measure_dist $selN2 $selO1
+	measure_dist $selN2 $selO2
+	measure_dist $selN3 $selO1
+	measure_dist $selN3 $selO2
+}
+
+# backbone beta hydrogen bond pairing
+
+# PSD95
+#set selHA1 "chain A and resid 25 and name O"
+#set selHB1 "chain B and resid 6 and name N"
+#set selHA2 "chain A and resid 27 and name N"
+#set selHB2 "chain B and resid 4 and name O"
+#set selHA3 "chain A and resid 27 and name O"
+#set selHB3 "chain B and resid 4 and name N"
+#set selHA4 "chain A and resid 29 and name N"
+#set selHB4 "chain B and resid 2 and name O"
+
+# N2P2
+set selHA1 "chain A and resid 19 and name O"
+set selHB1 "chain B and resid 6 and name N"
+set selHA2 "chain A and resid 21 and name N"
+set selHB2 "chain B and resid 4 and name O"
+set selHA3 "chain A and resid 21 and name O"
+set selHB3 "chain B and resid 4 and name N"
+set selHA4 "chain A and resid 23 and name N"
+set selHB4 "chain B and resid 2 and name O"
+
+
+measure_dist $selHA1 $selHB1
+measure_dist $selHA2 $selHB2
+measure_dist $selHA3 $selHB3
+measure_dist $selHA4 $selHB4
+
+# N2P2: 65 ; PSD95:72
+if [expr $val2 == 1] { # S at -2
+	set selHis "chain A and resid 65 and name NE2"
+	set selOG "chain B and resid 4 and name OG"
+	measure_dist $selHis $selOG
+} elseif [expr $val2 == 2] { # T at -2
+	set selHis "chain A and resid 65 and name NE2"
+	set selOG "chain B and resid 4 and name OG1"
+	measure_dist $selHis $selOG
+}
+
+# calculate a few RMSF
+set sel "chain B and resid 4 5 6 and backbone"
+myrmsf $sel
+
+set sel "chain B and resid 1 2 3 and backbone"
+myrmsf $sel
+
+set sel "chain A and resid 14 15 16 17 and backbone"
+myrmsf $sel
+
+set sel "chain A and resid 17 18 19 and backbone"
+myrmsf $sel
+
+set sel "chain A and resid 23 24 25 and backbone"
+myrmsf $sel
+
+set sel "chain A and resid 17"
+myrmsf $sel
+
+set sel "chain A and resid 72"
+myrmsf $sel
+
+set sel "chain A and resid 20"
+myrmsf $sel
+
+set sel "chain A and resid 22"
+myrmsf $sel
+
+set sel "chain A and resid 33"
+myrmsf $sel
+
+set sel "chain A and resid 36"
+myrmsf $sel
 
 exit
