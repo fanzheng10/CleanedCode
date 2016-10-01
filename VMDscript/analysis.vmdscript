@@ -2,14 +2,11 @@
 proc rmsd_through_time {{sel}} {
 	set output [open "mdRmsd.dat" a]
 	set reference [atomselect 0 $sel frame 1]
-	set compare [atomselect 0 $sel]
+	set snaps [atomselect 0 $sel]
 	puts $output "rmsd of ($sel)"
 	set numsteps [molinfo 0 get numframes]
 	for {set frame 1} {$frame < $numsteps} {incr frame} {
-		$compare frame $frame
-		set trans_mat [measure fit $compare $reference]
-		$compare move $trans_mat
-		set rmsd [measure rmsd $compare $reference]
+		set rmsd [measure rmsd $snaps $reference]
 		puts $output "$frame\t$rmsd"
 	}
 	close $output
@@ -17,6 +14,7 @@ proc rmsd_through_time {{sel}} {
 
 proc myrmsf {{sel}} {
   set output [open "mdRmsf.dat" a]
+  set numsteps [molinfo 0 get numframes]
   set snaps [atomselect 0 $sel]
   set rmsf [measure rmsf $snaps]
   puts $output "($sel):\t$rmsf"
@@ -42,6 +40,17 @@ set val2 [lindex $argv 1]
 mol new {namdrun_run.namdout.dcd} type {dcd} first 100 last -1 step 1 waitfor -1
 mol addfile {_start_wat.psf} type {psf} first 100 last -1 step 1 waitfor -1 0
 
+
+set numsteps [molinfo 0 get numframes]
+set reference [atomselect 0 "protein and not hydrogen" frame 1]
+set compare [atomselect 0 "protein and not hydrogen"]
+set template [atomselect 0 "protein"]
+for {set frame 2} {$frame < $numsteps} {incr frame} {
+	$compare frame $frame
+	$template frame $frame
+	set trans_mat [measure fit $compare $reference]
+	$template move $trans_mat
+}
 # C-terminus pairing
 
 # PSD95
@@ -55,7 +64,7 @@ set selN2 "chain A and resid 18 and name N"
 set selN3 "chain A and resid 19 and name N"
 
 
-if [expr $val1 == 0] { # when using carboxyl group
+if [expr $val1 == 0] { # when using carboxyl group from D
 	set selO1 "chain B and resid 6 and name OD1"
 	set selO2 "chain B and resid 6 and name OD2"
 	measure_dist $selN1 $selO1
@@ -130,22 +139,22 @@ myrmsf $sel
 set sel "chain A and resid 23 24 25 and backbone"
 myrmsf $sel
 
-set sel "chain A and resid 17"
+set sel "chain A and resid 17 and not hydrogen"
 myrmsf $sel
 
-set sel "chain A and resid 72"
+set sel "chain A and resid 72 and not hydrogen"
 myrmsf $sel
 
-set sel "chain A and resid 20"
+set sel "chain A and resid 20 and not hydrogen"
 myrmsf $sel
 
-set sel "chain A and resid 22"
+set sel "chain A and resid 22 and not hydrogen"
 myrmsf $sel
 
-set sel "chain A and resid 33"
+set sel "chain A and resid 33 and not hydrogen"
 myrmsf $sel
 
-set sel "chain A and resid 36"
+set sel "chain A and resid 36 and not hydrogen"
 myrmsf $sel
 
 exit

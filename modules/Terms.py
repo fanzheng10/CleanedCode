@@ -193,7 +193,7 @@ def replaceBfactor (pdbf, outf, dataf, res_col = 2, score_col = -1):
 def adhocCentralResidue(dirname, head, rlist):
     nhits = []
     for r in rlist:
-        seqf = head+'_'+dirname+'.seq'
+        seqf = head+'_'+dirname+'_'+r+'.seq'
         nhit = 0
         with open(seqf) as sf:
             for sl in sf:

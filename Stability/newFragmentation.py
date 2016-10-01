@@ -6,7 +6,7 @@ import pickle
 
 SB = selfbin(sys.argv[0])
 par = argparse.ArgumentParser()
-par.add_argument('--p', required=True, help='input PDB file')
+par.add_argument('--i', required=True, help='input PDB file')
 par.add_argument('--homof', help='the file with homologous information')
 par.add_argument('--db', default = '/home/anthill/fzheng/ironfs/searchDB/bc-30-sc-20141022-newpds', help = 'the directory of the searching database')
 par.add_argument('--dbl', help = 'list of the searching database')
@@ -27,29 +27,30 @@ pickle.dump(argdict, pkl)
 pkl.close()
 
 # get a contact graph
-confind_out = changeExt(args.p, 'conf')
+confind_out = changeExt(args.i, 'conf')
 if not os.path.isfile(confind_out):
-    Master.confind(p=args.p, o=confind_out, rLib=PATH_rotLib)
+    Master.confind(p=args.i, o=confind_out, rLib=PATH_rotLib)
 
 G = conGraph.conGraph(confind_out)
 
 homos = []
 if args.homof != None:
     Homo =  Analyze.findHomo(args.homof)
-    homos = Homo[getBase(args.p)]
+    homos = Homo[getBase(args.i)]
 
 Jobs = []
-dirname = removePath(getBase(args.p))
+dirname = removePath(getBase(args.i))
 
 selfts = []
 # search all local fragments
 for n in G.nodes():
-    t = Terms.Term(parent=args.p, seed=n)
+    t = Terms.Term(parent=args.i, seed=n)
     t.makeFragment(flank=2)
     selfts.append(t)
     crind = t.findResidue(n[0], n[1:])
     rmsd_eff = Stability.rmsdEff(t.getSegLen())
     cmd = ['python', SB + '/EnsemblePreparation.py',
+           '--pkl', pklpath,
            '--p', t.pdbf,
 		   '--homo', ' '.join(homos),
 		   '--rmsd', str(rmsd_eff),
@@ -62,19 +63,20 @@ for n in G.nodes():
     job.submit(3)
     time.sleep(0.5)
 
-Cluster.waitJobs(Jobs, giveup_time=1)
+Cluster.waitJobs(Jobs, giveup_time=1, subdir=False)
 
 # search all pair fragments
 pairts = []
 for e in G.edges():
     r1, r2 = e[0], e[1]
-    t = Terms.Term(parent=args.p, seed=r1, contact=[r2])
+    t = Terms.Term(parent=args.i, seed=r1, contact=[r2])
     t.makeFragment(flank=1)
     pairts.append(t)
     cenr = Terms.adhocCentralResidue(dirname, args.he, [r1, r2])
     crind =  t.findResidue(cenr[0], cenr[1:]) # should consider two positions in redundancy removal; but worry about that later
     rmsd_eff = Stability.rmsdEff(t.getSegLen())
     cmd = ['python', SB + '/EnsemblePreparation.py',
+           '--pkl', pklpath,
            '--p', t.pdbf,
 		   '--homo', ' '.join(homos),
 		   '--rmsd', str(rmsd_eff),
@@ -87,14 +89,18 @@ for e in G.edges():
     job.submit(3)
     time.sleep(0.5)
 
-Cluster.waitJobs(Jobs, giveup_time=1)
+Cluster.waitJobs(Jobs, giveup_time=1, subdir=False)
 
 
 # for all possible triple fragments, the criteria of search is at least two sub-pair fragments have more than 100 hits
 tripts = []
 for n in G.nodes():
-    for nn1 in G.neighbors(n):
-        for nn2 in G.neighbors(n):
+    contactsofn = G.neighbors(n)
+    contactsofn = sorted(contactsofn, key = lambda x: (x[0], int(x[1:])))
+    for j in range(len(contactsofn)-1):
+        for k in range(j+1, len(contactsofn)):
+            nn1 = contactsofn[j]
+            nn2 = contactsofn[k]
             seqf1 = '_'.join([args.he, dirname, n, nn1]) + '.seq'
             seqf2 = '_'.join([args.he, dirname, n, nn2]) + '.seq'
         if (not os.path.isfile(seqf1)) or (not os.path.isfile(seqf2)):
@@ -110,13 +116,14 @@ for n in G.nodes():
                 for lm in sm2:
                     nhit2 +=1
             if min(nhit1, nhit2) >= args.c2:
-                t = Terms.Term(parent=args.p, seed=n, contact=[nn1, nn2])
+                t = Terms.Term(parent=args.i, seed=n, contact=[nn1, nn2])
                 t.makeFragment(flank=1)
                 tripts.append(t)
                 cenr = Terms.adhocCentralResidue(dirname, args.he, [n,nn1,nn2])
                 crind =  t.findResidue(cenr[0], cenr[1:]) # should consider two positions in redundancy removal; but worry about that later
                 rmsd_eff = Stability.rmsdEff(t.getSegLen())
                 cmd = ['python', SB + '/EnsemblePreparation.py',
+                       '--pkl', pklpath,
                        '--p', t.pdbf,
                        '--homo', ' '.join(homos),
                        '--rmsd', str(rmsd_eff),
@@ -129,6 +136,6 @@ for n in G.nodes():
                 job.submit(3)
                 time.sleep(0.5)
 
-Cluster.waitJobs(Jobs, giveup_time=1)
+Cluster.waitJobs(Jobs, giveup_time=1, subdir=False)
 
 # in this specific code does not consider higher order terms

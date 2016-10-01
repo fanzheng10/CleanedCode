@@ -1,0 +1,22 @@
+set m 0
+foreach dir $argv {
+	puts $dir
+	set mydcd ${dir}/namdrun_run.namdout.dcd
+	set mypsf ${dir}/_start_wat.psf
+	set opdb ${dir}/last.pdb
+	mol new $mydcd type {dcd} first 0 last -1 step 1 waitfor -1
+	mol addfile $mypsf type {psf} first 0 last -1 step 1 waitfor -1 $m
+	set numsteps [molinfo $m get numframes]
+	set reference [atomselect $m "protein and not hydrogen" frame 1]
+	set compare [atomselect $m "protein and not hydrogen"]
+	set template [atomselect $m "protein"]
+	for {set frame 2} {$frame < $numsteps} {incr frame} {
+		$compare frame $frame
+		$template frame $frame
+		set trans_mat [measure fit $compare $reference]
+		$template move $trans_mat
+	}
+	[atomselect $m protein frame last] writepdb $opdb
+	incr m
+}
+exit

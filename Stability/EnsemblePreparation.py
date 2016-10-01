@@ -51,6 +51,9 @@ def runMaster(pdb, rmsdcut):
 						topN=args.c1
 						)
 
+if not isinstance(args.p, list):
+	args.p = [args.p]
+
 for i in range(len(args.p)):
 	frag = args.p[i]
 	os.system('cp ' + odir+'/'+frag + ' ./')

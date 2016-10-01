@@ -66,7 +66,7 @@ def qsub(cmds, fileName=None, mem=2, hrs=3, ironfs=True, opts=[], maxJobs=2500, 
     return jobid  # will return job id
 
 
-def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3):
+def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3, subdir = True):
     odir = os.getcwd()
     time.sleep(sleep_time)
     if type == 'list':
@@ -82,7 +82,8 @@ def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3):
                             print('have failed 3 times, give up ...')
                             continue
                         print('resubmitting ... ')
-                        os.chdir(j.myid)
+                        if subdir:
+                            os.chdir(j.myid)
                         j.submit(rerun_time)
                         jobs.append(j)
                         os.chdir(odir)
@@ -101,7 +102,8 @@ def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3):
                             print('have failed 3 times, give up ...')
                             continue
                         print('resubmitting ... ')
-                        os.chdir(j.myid)
+                        if subdir:
+                            os.chdir(j.myid)
                         j.submit(rerun_time)
                         jobs[k] = j
                         os.chdir(odir)
