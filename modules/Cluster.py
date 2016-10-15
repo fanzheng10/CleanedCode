@@ -68,7 +68,6 @@ def qsub(cmds, fileName=None, mem=2, hrs=3, ironfs=True, opts=[], maxJobs=2500, 
 
 def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3, subdir = True):
     odir = os.getcwd()
-    time.sleep(sleep_time)
     if type == 'list':
         assert isinstance(jobs, list)
         while len(jobs)>0:
@@ -88,6 +87,7 @@ def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3, 
                         jobs.append(j)
                         os.chdir(odir)
             print('Running, '+ str(len(jobs)) + ' jobs left ...')
+            time.sleep(sleep_time)
     if type == 'dict':
         assert isinstance(jobs, dict)
         while len(jobs)>0:
@@ -108,6 +108,8 @@ def waitJobs(jobs, type = 'list', sleep_time=120, rerun_time=24, giveup_time=3, 
                         jobs[k] = j
                         os.chdir(odir)
             print('Running, '+ str(len(jobs)) + ' jobs left ...')
+            time.sleep(sleep_time)
+
 
 
 def numJobs(u='fzheng'):

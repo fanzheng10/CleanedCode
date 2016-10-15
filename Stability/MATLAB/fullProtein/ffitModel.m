@@ -1,5 +1,5 @@
 % clear;
-function [optParams, obj] = fitModel(M, rightVec, defaultParams, EAAfreq, outfile, paramsUsage, lambda)
+function [optParams, obj] = ffitModel(M, rightVec, defaultParams, currentvalue, EAAfreq, paramsUsage, lambda)
 naa = 20;
 nc = (size(M, 2) - naa)/(naa * naa);
 assert(round(nc) == nc, 'could not figure out the number of contacts');
@@ -7,7 +7,7 @@ np = size(M, 2);
 
 exclCols = find(paramsUsage == 0); % excluded columns
 
-optParams = defaultParams;
+optParams = currentvalue';
 
 % DerivativeCheck 
 % opts = optimoptions('fminunc', 'Algorithm','trust-region', 'Display', 'iter', 'GradObj', 'on', 'DerivativeCheck', 'on');
@@ -54,7 +54,7 @@ while (notConv)
     clear fitness; % clear persistent variables from inside fitness
 
     % check if changed
-    if (norm(wSelf - optParams(pFit)) > 0.01)
+    if (norm(wSelf - optParams(pFit)) > 0.1)
         notConv = 1;
     end
     optParams(pFit) = wSelf;
@@ -78,17 +78,16 @@ while (notConv)
         clear fitness; % clear persistent variables from inside fitness
 
         % check if changed
-        if (norm(wPair - optParams(pFit)) > 0.01)
+        if (norm(wPair - optParams(pFit)) > 0.1)
             notConv = 1;
         end
         optParams(pFit) = wPair;
     end
-    
-    save(strcat(outfile, '.mat'), 'optParams');
-    
+        
     % break if the objective did not improve much
     disp(sprintf('objective from previous cycle is %f, and now is %f', pobj, obj));
-    if (pobj - obj < 10^-5)
+    %break % temp
+    if (pobj - obj < 0.01)
         break;
     end
     if (~notConv)

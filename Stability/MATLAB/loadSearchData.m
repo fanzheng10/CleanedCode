@@ -1,5 +1,6 @@
 function [ leftMat, rightVec, defaultParams, paramsUsage, usedRows, conresidUsed] = loadSearchData( folder, header, conpot )
 
+maxC = 2;
 %cd(folder);
 self = 20;
 pair = 400;
@@ -9,10 +10,14 @@ files = dir(sprintf('%s/*.pdb', folder));
 
 conNames = {};
 
+usefiles = zeros(length(files), 1);
 % read the residue id of contacts
 icon = 0;
 for i = 1:length(files)
     ncon = regexp( strrep(files(i).name, '.pdb', ''), '_', 'split');
+    if length(ncon) > maxC + 2
+        usefiles(i) = 1;
+    end
     if length(ncon) ~= 3
         continue
     else
@@ -20,10 +25,11 @@ for i = 1:length(files)
         conNames{icon} = ncon{3};
     end
 end
+usedFileInds = find(usefiles == 1);
 
 %% lay out the residues coverred by a pdb file
 residueLists = {};
-for i = 1: length(files)
+for i = 1: usedFileInds
     pdbInfo = textscan(fopen(sprintf('%s/%s', folder, files(i).name)), '%s', 'Delimiter', '', 'Headerlines', 1);
     pdbInfo = pdbInfo{1};
     residueNums = {};
@@ -107,11 +113,10 @@ for i = 1: length(files)
 end
 
 % control, only use low level fragments
-usedRows = find(sum(Sparse, 2) <=3);
+% usedRows = find(sum(Sparse, 2) <=3);
 % usedRows = 1:size(rightVec, 1);
-
-Sparse = Sparse(usedRows, :);
-rightVec = rightVec(usedRows, :);
+% Sparse = Sparse(usedRows, :);
+% rightVec = rightVec(usedRows, :);
 
 %% check the parameters usage, and remove the not used columns
 paramsUsage = sum(Sparse(logical(rightVec(:,1)), :), 1);

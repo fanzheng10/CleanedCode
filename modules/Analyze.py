@@ -288,10 +288,16 @@ def createHomoProfile(fastaf, outf):
             hf.write(' '.join(homologs) + '\n')
 
 
-def findHomo(homof):
-    Homo = {}
+def findHomo(homof, type = 1):
     with open(homof) as hf:
-        for hl in hf:
-            items = hl.strip().split()
-            Homo[items[0]] = items[1:]
+        if type == 1:
+            Homo = {}
+            for hl in hf:
+                items = hl.strip().split()
+                Homo[items[0]] = items[1:]
+        else:
+            Homo = []
+            for hl in hf:
+                items = hl.strip().split()
+                Homo.extend(items)
     return Homo

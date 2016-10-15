@@ -11,9 +11,10 @@ args = par.parse_args()
 vmdbin = '~/home/Thesis/Codes/VMDscript'
 
 lines = open(args.l).readlines()
-pepids = []
+pepids, pepseqs = [], []
 for l in lines:
     pepids.append(l.strip().split()[-1])
+    pepseqs.append(l.strip().split()[:-2])
 
 odir = os.getcwd()
 outf = open(args.o, 'w')
@@ -24,10 +25,10 @@ for pi in range(len(pepids)):
     var1=1
     if args.Dc != None and pi in args.Dc:
         var1=0
-    if pepids[pi][3] == 'S': # amino acid at -2
-        var2=0
-    elif pepids[pi][3] == 'T':
+    if pepseqs[pi][3] == 'SER': # amino acid at -2
         var2=1
+    elif pepseqs[pi][3] == 'THR':
+        var2=2
     else:
         continue
     for i in range(64):

@@ -35,8 +35,7 @@ G = conGraph.conGraph(confind_out)
 
 homos = []
 if args.homof != None:
-    Homo =  Analyze.findHomo(args.homof)
-    homos = Homo[getBase(args.i)]
+    homos =  Analyze.findHomo(args.homof, type =2)
 
 Jobs = []
 dirname = removePath(getBase(args.i))

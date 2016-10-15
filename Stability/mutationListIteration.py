@@ -78,7 +78,7 @@ for pos in positions:
 	cons, _ = Terms.contactList(profile=args.i+'/'+pid+'.conf',
 								resnum=iresnum, cid=icid,
 								outFile=conListf,
-								dmin=0.02, monomer=True)
+								dmin=0.02)
 	pos2pdb[pos] = args.i+'/'+pid+'.pdb'
 	pos2cons[pos] = cons
 os.chdir(odir)
@@ -94,7 +94,7 @@ for pos in positions:
 	parentpdb = pos2pdb[pos]
 	cons = pos2cons[pos]
 	seed = pos.split('_')[1]
-	pcid = pos[0:5]
+	pcid = pos[0:6]
 	if pcid in Homo:
 		homos = Homo[pcid]
 	else:
@@ -108,6 +108,8 @@ for pos in positions:
 
 	# create pair term with 1 contact
 	for con in cons:
+		if not int(con[1:]) > 0:
+			continue
 		c1term =Terms.Term(parent=parentpdb,
 						   seed=seed,
 						   contact=[con])
@@ -148,8 +150,8 @@ Ncon = 2
 while Ncon <= args.c3:
 	positions_copy = [x for x in positions]
 	while len(positions_copy) > 0:
+		time.sleep(0.5*len(positions_copy))
 		for pos in positions_copy:
-			time.sleep(1)
 			os.chdir(odir)
 			os.chdir(pos)
 			parentpdb = pos2pdb[pos]
@@ -172,7 +174,6 @@ while Ncon <= args.c3:
 						positions_copy.remove(pos)
 						continue
 					print('resubmitting ... ')
-					os.chdir(pos)
 					lowj.submit(12)
 					jobs[lowj.myid] = lowj
 				else: # if the low job has finished, prepare the current level
@@ -193,21 +194,22 @@ while Ncon <= args.c3:
 							morermsds.append(str(Stability.rmsdEff(Hterm.getSegLen())))
 							morecrinds.append(str(Hterm.findResidue(seed[0], seed[1:])))
 
-					cmd = ['python', SB + '/EnsemblePreparation.py',
-		   					'--pkl', pklpath,
-		   					'--p', ' '.join(morepdbs),
-							'--homo', ' '.join(homos),
-							'--rmsd', ' '.join(morermsds),
-		   					'--crind', ' '.join(morecrinds),
-		   					'--ncon', str(Ncon)]
-					cmd = ' '.join(cmd)
+					if len(morepdbs) > 0:
+						cmd = ['python', SB + '/EnsemblePreparation.py',
+								'--pkl', pklpath,
+								'--p', ' '.join(morepdbs),
+								'--homo', ' '.join(homos),
+								'--rmsd', ' '.join(morermsds),
+								'--crind', ' '.join(morecrinds),
+								'--ncon', str(Ncon)]
+						cmd = ' '.join(cmd)
 
-					new_jobid = pos+'.'+str(Ncon)
-					job = Cluster.jobOnCluster([cmd], new_jobid, odir+'/'+pos + '/.finished.'+str(Ncon))
-					jobs[new_jobid] = job
-					job.submit(3)
-					time.sleep(0.5)
+						new_jobid = pos+'.'+str(Ncon)
+						job = Cluster.jobOnCluster([cmd], new_jobid, odir+'/'+pos + '/.finished.'+str(Ncon))
+						jobs[new_jobid] = job
+						job.submit(3)
+						time.sleep(0.5)
 	Ncon +=1
 
 # wait all jobs to finish
-Cluster.waitJobs(jobs, type='dict', giveup_time=1)
+Cluster.waitJobs(jobs, type='dict', giveup_time=1, sleep_time=0)
