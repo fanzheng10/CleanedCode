@@ -208,6 +208,31 @@ def flatPositionScanning(file, col, resi, skiprow=1):
     return mutdict
 
 
+def parseMutScan(mutList, predict):
+    '''
+
+    :param mutList:
+    :param predict:
+    :return:
+    '''
+    mlist =[]
+    out = []
+    with open(mutList) as mls:
+        for ml in mls:
+            mlist.append(ml.strip())
+    with open(predict) as pre:
+        for pl in pre:
+            info = pl.strip().split()
+            wt = info[2]
+            wtind = aaindex[wt]
+            pos = info[3]
+            scores = info[6:]
+            for i in range(20):
+                if pos + aatypes[i] in mlist:
+                    out.append(float(scores[i]) - float(scores[wtind]))
+    return out
+
+
 # def parseTermMaster(line):
 #     line = line.strip().split()
 #     termid = line[2]

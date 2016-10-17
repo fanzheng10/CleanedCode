@@ -35,15 +35,13 @@ if (usePenalty)
     pUsage = varargin{4};
     optingCols = varargin{5};
     lambda = varargin{6};
-    isself = varargin{7};
     updatedParams = currentParams;
     updatedParams(optingCols) = x;
 %     penalty = mean((updatedParams - defaultParams) .^ 2 ./ (pUsage + 1)') * lambda;
-    selfpenalty = lambda * sum( (updatedParams(1:20) - defaultParams(1:20)) .^ 2 ./ (pUsage(1:20) + 1)');
+    selfpenalty = lambda * (updatedParams(1:20) - defaultParams(1:20)) .^ 2 ./ (pUsage(1:20) + 1)';
     if length(defaultParams) > 20
-        pairpenalty = 0.025 * lambda * sum( (updatedParams(21:end) - defaultParams(21:end)) .^2 ./ (pUsage(21:end) + 1)');
+        pairpenalty = 0.2 * lambda * (updatedParams(21:end) - defaultParams(21:end)) .^2
     end
-    penalty = selfpenalty + pairpenalty;
     F = F + penalty;
 end
 
@@ -73,12 +71,7 @@ if (nargout > 1)
     
     % Jacobian also changes with the penalty term
     if (usePenalty == 1)
-        if isself
-            J = J + 2 * lambda * (x - defaultParams(optingCols))' ./ (pUsage(optingCols) + 1);
-        else
-            J = J + 0.025 * 2 * lambda * (x - defaultParams(optingCols))' ./ (pUsage(optingCols) + 1);
-        end
-%         J = J + (x - defaultParams(optingCols))' ./ (pUsage(optingCols) + 1) * 2 * lambda / length(defaultParams);        
+        J = J + (x - defaultParams(optingCols))' ./ (pUsage(optingCols) + 1) * 2 * lambda / length(defaultParams);        
     end
 end
 

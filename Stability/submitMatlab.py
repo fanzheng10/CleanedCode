@@ -17,9 +17,12 @@ par.add_argument('--conpot', help = 'file for contact potential')
 par.add_argument('--o', required = True, help = 'output file, for the result of prediction')
 par.add_argument('--oo', action = 'store_true', help = 'if true, the matlab files already exists and only output the results')
 par.add_argument('--scan', action = 'store_true', help = 'if true, will output all amno acids' )
+par.add_argument('--bg', action='store_true', help = 'if true, will modify EPs by background parameters')
 args = par.parse_args()
 
-def outputscore(mutlist, output, scan =0):
+def outputscore(mutlist, output, scan =0, bg =0):
+    if bg:
+        aafreq= np.array(PDB.aaFreq)
     with open(mutlist) as mutf, open(output, 'w') as ofh:
         for l in mutf:
             l = l.strip()
@@ -41,9 +44,13 @@ def outputscore(mutlist, output, scan =0):
             optparams = loadmat(matf)['optParams']
             assert (optparams.shape[0] - 20) / 400 == len(cons), mut.dir
             selfdiff = optparams[PDB.aaindex[mut.m]] - optparams[PDB.aaindex[mut.w]]
+            if bg:
+                selfdiff += -np.log(aafreq[PDB.aaindex[mut.m]]) + np.log(aafreq[PDB.aaindex[mut.w]])
             pairdiff = []
             if scan:
                 scanscore = optparams[0:20].T[0]
+                if bg:
+                    scanscore += -np.log(aafreq)
             for i in range(len(cons)):
                 paramsi = optparams[20 + 400*i: 20+400*(i+1)].reshape(20,20)
                 conind = PDB.aaindex[PDB.t2s(cons[i][1])]
@@ -60,12 +67,14 @@ def outputscore(mutlist, output, scan =0):
     # exit the program
     exit(0)
 
-scan = 0
+scan, bg = 0, 0
 if args.scan:
     scan = 1
+if args.bg:
+    bg = 1
 
 if args.oo:
-    outputscore(args.l, args.o, scan) # this will ignore all the remaining lines
+    outputscore(args.l, args.o, scan, bg) # this will ignore all the remaining lines
 
 assert args.conpot != None
 assert args.head != None
@@ -100,8 +109,8 @@ for d in dirs:
     jobs.append(job)
     job.submit(3)
 
-Cluster.waitJobs(jobs, giveup_time=0, sleep_time=0)
+Cluster.waitJobs(jobs, giveup_time=0, sleep_time=5)
 
 # score
-outputscore(args.l, args.o, scan)
+outputscore(args.l, args.o, scan, bg)
 

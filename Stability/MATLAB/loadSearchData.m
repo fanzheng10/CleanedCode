@@ -1,4 +1,4 @@
-function [ leftMat, rightVec, defaultParams, paramsUsage, usedRows, conresidUsed] = loadSearchData( folder, header, conpot )
+function [ leftMat, rightVec, defaultParams, paramsUsage, conresidUsed] = loadSearchData( folder, header, conpot )
 
 maxC = 2;
 %cd(folder);
@@ -47,19 +47,20 @@ AA = {'ALA', 'CYS', 'ASP', 'GLU', 'PHE', 'GLY', 'HIS', 'ILE', 'LYS', 'LEU', 'MET
 Sparse = [];
 rightVec = [];
 
-for i = 1: length(files)
-    seqf = strcat(header, '_', strrep(files(i).name, 'pdb', 'seq'));
+for i = 1: length(usedFileInds)
+    fInd = usedFileInds(i);
+    seqf = strcat(header, '_', strrep(files(fInd).name, 'pdb', 'seq'));
     if exist(sprintf('%s/%s', folder, seqf), 'file') == 0
         continue;
     end
-    fileSplit = regexp( strrep(files(i).name, '.pdb', ''), '_', 'split');
-    cencolid = find(strcmp(residueLists{i}, cennum)) + 1;
+    fileSplit = regexp( strrep(files(fInd).name, '.pdb', ''), '_', 'split');
+    cencolid = find(strcmp(residueLists{fInd}, cennum)) + 1;
     
     if length(fileSplit) > 2
         conInThisFile = fileSplit(3:end);
         concolid = zeros(size(conInThisFile));
         for c = 1: length(conInThisFile)
-            concolid(c) = find(strcmp(residueLists{i}, conInThisFile(c))) + 1;
+            concolid(c) = find(strcmp(residueLists{fInd}, conInThisFile(c))) + 1;
         end
     end
     
@@ -67,7 +68,7 @@ for i = 1: length(files)
 %     TopN = 20000;
     
     % read the seq files
-    nfield = length(residueLists{i}) + 1;
+    nfield = length(residueLists{fInd}) + 1;
     seqResults = textscan(fopen(sprintf('%s/%s', folder, seqf)), repmat('%s ' , [1, nfield]));
 %     seqResults = textscan(fopen(sprintf('%s/%s', folder, seqf)), repmat('%s ' , [1, nfield]), TopN);
 

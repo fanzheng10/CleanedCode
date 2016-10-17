@@ -49,8 +49,9 @@ while (notConv)
     % notice defaultParams and paramsUsage; although not all parameters
     % changed on each stage, the penalty of all parameters should be
     % considered on in objective function
+    isself = 1;
     [wSelf, obj] = fminunc(@(x) fitness(x, Mpar, nzMpar, constE, I, naa, ...
-        weights, defaultParams, optParams, paramsUsage, pFit, lambda), optParams(pFit), opts);
+        weights, defaultParams, optParams, paramsUsage, pFit, lambda, isself), optParams(pFit), opts);
     clear fitness; % clear persistent variables from inside fitness
 
     % check if changed
@@ -60,6 +61,7 @@ while (notConv)
     optParams(pFit) = wSelf;
     
     % optimize contact energies, one contact at a time
+    isself = 0;
     for i = 1:nc
         disp(sprintf('optimizing pair energies for contact %d...', i));
         pFit = naa + 1 + naa*naa*(i-1) : naa + naa*naa*i;
@@ -74,7 +76,7 @@ while (notConv)
         nzMpar = nzM(pFit);
 
         [wPair, obj] = fminunc(@(x) fitness(x, Mpar, nzMpar, constE, I, naa, ...
-            weights, defaultParams, optParams, paramsUsage, pFit, lambda),  optParams(pFit), opts);
+            weights, defaultParams, optParams, paramsUsage, pFit, lambda, isself),  optParams(pFit), opts);
         clear fitness; % clear persistent variables from inside fitness
 
         % check if changed
