@@ -37,6 +37,8 @@ def outputscore(mutlist, output, scan =0, bg =0):
                         continue
                     if cond >= 0.02:
                         cons.append([conname, conres, cond])
+            cons = sorted(cons, key = lambda x :x[0])
+
             matf = mut.dir + '/' + mut.dir + '.' + args.ext + '.mat'
             if not os.path.isfile(matf):
                 ofh.write(l + '\n')
@@ -45,12 +47,12 @@ def outputscore(mutlist, output, scan =0, bg =0):
             assert (optparams.shape[0] - 20) / 400 == len(cons), mut.dir
             selfdiff = optparams[PDB.aaindex[mut.m]] - optparams[PDB.aaindex[mut.w]]
             if bg:
-                selfdiff += -np.log(aafreq[PDB.aaindex[mut.m]]) + np.log(aafreq[PDB.aaindex[mut.w]])
+                selfdiff += np.log(aafreq[PDB.aaindex[mut.m]]) - np.log(aafreq[PDB.aaindex[mut.w]])
             pairdiff = []
             if scan:
                 scanscore = optparams[0:20].T[0]
                 if bg:
-                    scanscore += -np.log(aafreq)
+                    scanscore += np.log(aafreq)
             for i in range(len(cons)):
                 paramsi = optparams[20 + 400*i: 20+400*(i+1)].reshape(20,20)
                 conind = PDB.aaindex[PDB.t2s(cons[i][1])]

@@ -54,13 +54,13 @@ for i = 1: length(usedFileInds)
         continue;
     end
     fileSplit = regexp( strrep(files(fInd).name, '.pdb', ''), '_', 'split');
-    cencolid = find(strcmp(residueLists{fInd}, cennum)) + 1;
+    cencolid = find(strcmp(residueLists{i}, cennum)) + 1;
     
     if length(fileSplit) > 2
         conInThisFile = fileSplit(3:end);
         concolid = zeros(size(conInThisFile));
         for c = 1: length(conInThisFile)
-            concolid(c) = find(strcmp(residueLists{fInd}, conInThisFile(c))) + 1;
+            concolid(c) = find(strcmp(residueLists{i}, conInThisFile(c))) + 1;
         end
     end
     
@@ -68,7 +68,7 @@ for i = 1: length(usedFileInds)
 %     TopN = 20000;
     
     % read the seq files
-    nfield = length(residueLists{fInd}) + 1;
+    nfield = length(residueLists{i}) + 1;
     seqResults = textscan(fopen(sprintf('%s/%s', folder, seqf)), repmat('%s ' , [1, nfield]));
 %     seqResults = textscan(fopen(sprintf('%s/%s', folder, seqf)), repmat('%s ' , [1, nfield]), TopN);
 

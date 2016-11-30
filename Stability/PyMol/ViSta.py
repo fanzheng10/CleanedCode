@@ -36,6 +36,17 @@ def showCons(mode='sticks', showcond = 0):
                 cmd.label(selection ='c. ' + cons[i][0] + ' and i. ' + cons[i][1:] + ' and n. CA', expression=format(float(conds[i]), '.3f'))
 cmd.extend( "showCons", showCons )
 
+def showSpheres():
+    seedname = removePath(os.getcwd()).split('_')[-1]
+    sele = 'c. ' + seedname[0] + ' and i. ' + seedname[1:] + ' and n. CA'
+    cmd.show('sphere', sele)
+    conlistf = removePath(os.getcwd())+'.conlist'
+    (cons, conds) = readMultiColumn(conlistf, coln=[2,3])
+    for i in range(len(conds)):
+        if float(conds[i]) >= 0.02:
+            sele = 'c. ' + cons[i][0] + ' and i. ' + cons[i][1:] + ' and n. CA'
+            cmd.show('sphere', sele)
+cmd.extend( "showSpheres", showSpheres )
 
 def showFrags():
     pdbs = [x for x in os.listdir('.') if x.endswith('.pdb')]
@@ -65,16 +76,15 @@ def showParamsValue(mut, matf):
     selfscore = optParams[aaindex[mut]] - optParams[aaindex[wt]]
     totalScore += float(selfscore)
     cmd.label(selection=seedsele, expression=format(float(selfscore), '.2f'))
-    cons2, conres2 = [], []
+    cons2 = []
     for i in range(len(cons)):
-        if conds[i] > 0.02:
-            cons2.append(cons[i])
-            conres2.append(conres[i])
-
+        if float(conds[i]) > 0.02:
+            cons2.append([cons[i], conres[i]])
+    cons2 = sorted(cons2, key=lambda x:x[0])
     for i in range(len(cons2)):
         paramsi = optParams[20 + 400*i: 20+400*(i+1)].reshape(20,20)
-        conind = aaindex[t2s(conres2[i])]
-        consele = 'c. ' + cons2[i][0] + ' and i. ' + cons2[i][1:] + ' and n. CA'
+        conind = aaindex[t2s(cons2[i][1])]
+        consele = 'c. ' + cons2[i][0][0] + ' and i. ' + cons2[i][0][1:] + ' and n. CA'
         pair_diff_i = paramsi[conind, aaindex[mut]] - paramsi[conind, aaindex[wt]]
         totalScore += pair_diff_i
         cmd.distance('dist' + str(i),seedsele, consele)

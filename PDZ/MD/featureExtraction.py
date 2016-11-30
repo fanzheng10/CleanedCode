@@ -4,7 +4,7 @@ from General import *
 # run vmd script
 par = argparse.ArgumentParser()
 par.add_argument('--l', required = True, help = 'a list of peptides')
-par.add_argument('--Dc', nargs = '*', help = 'the index of peptides with terminus from ASP side chain')
+par.add_argument('--Dc', type = int, nargs = '*', help = 'the index of peptides with terminus from ASP side chain')
 par.add_argument('--o', required = True, help = 'output file')
 args = par.parse_args()
 

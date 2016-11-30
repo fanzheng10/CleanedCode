@@ -208,7 +208,7 @@ def flatPositionScanning(file, col, resi, skiprow=1):
     return mutdict
 
 
-def parseMutScan(mutList, predict):
+def parseMutScan(mutList, predict, startcol = 6):
     '''
 
     :param mutList:
@@ -226,7 +226,7 @@ def parseMutScan(mutList, predict):
             wt = info[2]
             wtind = aaindex[wt]
             pos = info[3]
-            scores = info[6:]
+            scores = info[startcol:]
             for i in range(20):
                 if pos + aatypes[i] in mlist:
                     out.append(float(scores[i]) - float(scores[wtind]))
