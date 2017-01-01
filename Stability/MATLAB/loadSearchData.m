@@ -1,6 +1,6 @@
 function [ leftMat, rightVec, defaultParams, paramsUsage, conresidUsed] = loadSearchData( folder, header, conpot )
 
-maxC = 2;
+maxC = 0;
 %cd(folder);
 self = 20;
 pair = 400;
@@ -15,7 +15,7 @@ usefiles = zeros(length(files), 1);
 icon = 0;
 for i = 1:length(files)
     ncon = regexp( strrep(files(i).name, '.pdb', ''), '_', 'split');
-    if length(ncon) > maxC + 2
+    if length(ncon) <= maxC + 2
         usefiles(i) = 1;
     end
     if length(ncon) ~= 3
@@ -114,8 +114,8 @@ for i = 1: length(usedFileInds)
 end
 
 % control, only use low level fragments
-% usedRows = find(sum(Sparse, 2) <=3);
-% usedRows = 1:size(rightVec, 1);
+% usedRows = find(sum(Sparse, 2) <=1);
+% % usedRows = 1:size(rightVec, 1);
 % Sparse = Sparse(usedRows, :);
 % rightVec = rightVec(usedRows, :);
 

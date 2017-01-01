@@ -12,7 +12,7 @@ optParams = currentvalue';
 % DerivativeCheck 
 % opts = optimoptions('fminunc', 'Algorithm','trust-region', 'Display', 'iter', 'GradObj', 'on', 'DerivativeCheck', 'on');
 % opts = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'iter', 'GradObj', 'on', 'DerivativeCheck', 'on', 'FinDiffRelStep', 10^-6);
-opts = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'iter', 'GradObj', 'on', 'TolFun', 10^-5);
+opts = optimoptions('fminunc', 'Algorithm', 'quasi-newton', 'Display', 'iter', 'GradObj', 'on', 'TolFun', 10^-4);
 
 % weigh all queries roughly equally
 weights = rightVec(:, 2);

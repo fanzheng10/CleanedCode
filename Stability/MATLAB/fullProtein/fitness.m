@@ -37,9 +37,10 @@ if (usePenalty)
     lambda = varargin{6};
     updatedParams = currentParams;
     updatedParams(optingCols) = x;
-    penalty = mean((updatedParams - defaultParams) .^ 2 ./ (pUsage + 1)') * lambda;
+    penalty1 = mean((updatedParams - defaultParams) .^ 2 ./ (pUsage + 1)') * lambda;
+    penalty2 = mean((updatedParams - zeros(size(defaultParams))) .^ 2 ./ (pUsage + 1)') * lambda;
     
-    F = F + penalty;
+    F = F + penalty1 + penalty2;
 end
 
 % were we asked for the Jacobian?
@@ -68,7 +69,8 @@ if (nargout > 1)
     
     % Jacobian also changes with the penalty term
     if (usePenalty == 1)
-        J = J + (x - defaultParams(optingCols))' ./ (pUsage(optingCols) + 1) * 2 * lambda / length(defaultParams);        
+        J = J + (x - defaultParams(optingCols))' ./ (pUsage(optingCols) + 1) * 2 * lambda / length(defaultParams) ...
+            + (x - zeros(size(x)))' ./ (pUsage(optingCols) + 1) * 2 * lambda / length(defaultParams) ;        
     end
 end
 

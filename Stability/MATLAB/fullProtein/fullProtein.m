@@ -38,7 +38,7 @@ residueList = residueList{1};
 [~, orderedResidues] = sort(residueNcon, 1, 'descend');
 
 %% iterate until converge
-Conv_Threshold = 0.001*nResidues;
+Conv_Threshold = 0.01*nResidues;
 
 currentParamsValues = cell(nResidues + nContacts, 1);
 for i = 1: nResidues
@@ -75,7 +75,7 @@ while (1)
         % optimize parameters for this position, should return the value of
         % objective function and current parameters
         % fitModel maybe kept the same
-        defaultValue = zeros(self + length(conNames) * pair, 1);
+%         defaultValue = zeros(self + length(conNames) * pair, 1);
         
         % true if the current residue is the first one in the pair
         firstInPair = logical(strcmp(usedCons(:,1), currentResidue));
@@ -91,7 +91,7 @@ while (1)
             currentValue( self+1+(j-1)*pair : self+j*pair ) = currentPairValue;
         end
             
-        [optParams, obj] = ffitModel(leftMat, rightVec, defaultValue, currentValue, EAAfreqVec, paramsUsage, lambda);
+        [optParams, obj] = ffitModel(leftMat, rightVec, currentValue', currentValue, EAAfreqVec, paramsUsage, lambda);
         
         currentParamsValues{orderedResidues(i)} = optParams(1:self)';
         for j = 1:length(conNames)
